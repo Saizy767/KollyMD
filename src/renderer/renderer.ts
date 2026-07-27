@@ -13,6 +13,9 @@ const saveAsDocBtn = document.getElementById('save-as-doc') as HTMLButtonElement
 const docStatus = document.getElementById('doc-status') as HTMLSpanElement
 const editor = document.getElementById('editor') as HTMLTextAreaElement
 const tabsList = document.getElementById('tabs-list') as HTMLUListElement
+const preview = document.getElementById('preview') as HTMLDivElement
+const previewStatus = document.getElementById('preview-status') as HTMLSpanElement
+const backlinksList = document.getElementById('backlinks') as HTMLUListElement
 
 let vaultRootPath: string | null = null
 let selectedFolder: string | null = null
@@ -114,6 +117,8 @@ async function switchToDoc(docId: string): Promise<void> {
   loadActiveBuffer()
   updateDocStatus()
   renderTabs()
+  schedulePreview()
+  loadBacklinks()
 }
 
 async function setDirty(value: boolean): Promise<void> {
@@ -130,6 +135,111 @@ async function setDirty(value: boolean): Promise<void> {
   updateDocStatus()
   renderTabs()
 }
+
+let previewTimer: ReturnType<typeof setTimeout> | null = null
+
+function schedulePreview(): void {
+  if (previewTimer) clearTimeout(previewTimer)
+  previewTimer = setTimeout(() => {
+    renderPreview()
+  }, 150)
+}
+
+async function renderPreview(): Promise<void> {
+  const tab = activeTab()
+  if (!tab) {
+    preview.innerHTML = ''
+    previewStatus.textContent = ''
+    return
+  }
+  const content = editor.value
+  try {
+    const result = await window.api.knowledge.render(content)
+    preview.innerHTML = result.html
+    previewStatus.textContent = ''
+  } catch (e) {
+    previewStatus.textContent = '[Error: ' + (e as Error).message + ']'
+  }
+}
+
+function noteNameFromPath(filePath: string): string {
+  const basename = docName(filePath)
+  return basename.toLowerCase().endsWith('.md') ? basename.slice(0, -3) : basename
+}
+
+async function loadBacklinks(): Promise<void> {
+  const tab = activeTab()
+  if (!tab || !tab.path) {
+    backlinksList.innerHTML = ''
+    return
+  }
+  const noteName = noteNameFromPath(tab.path)
+  try {
+    const backlinks = await window.api.knowledge.findBacklinks(noteName)
+    backlinksList.innerHTML = ''
+    if (backlinks.length === 0) {
+      const li = document.createElement('li')
+      li.textContent = 'No backlinks'
+      backlinksList.appendChild(li)
+    } else {
+      for (const bl of backlinks) {
+        const li = document.createElement('li')
+        const span = document.createElement('span')
+        span.textContent = bl.sourceName
+        span.addEventListener('click', () => {
+          openFile(bl.sourcePath)
+        })
+        li.appendChild(span)
+        backlinksList.appendChild(li)
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load backlinks', (e as Error).message)
+  }
+}
+
+async function handleWikiLinkClick(name: string): Promise<void> {
+  try {
+    const resolved = await window.api.knowledge.resolveLink(name)
+    if (resolved) {
+      await openFile(resolved.path)
+    } else {
+      const confirmed = confirm("Create note '" + name + "'?")
+      if (confirmed) {
+        const result = await window.api.knowledge.createNoteFromLink(name)
+        await loadExplorer()
+        await openFile(result.path)
+      }
+    }
+  } catch (e) {
+    alert((e as Error).message)
+  }
+}
+
+async function handleTagClick(tag: string): Promise<void> {
+  try {
+    const notes = await window.api.knowledge.findNotesByTag(tag)
+    if (notes.length === 0) {
+      alert('No notes with tag #' + tag)
+    } else {
+      const lines = notes.map(n => n.name + ' -> ' + n.path)
+      alert('Notes with tag #' + tag + ':\n\n' + lines.join('\n'))
+    }
+  } catch (e) {
+    alert((e as Error).message)
+  }
+}
+
+preview.addEventListener('click', (e) => {
+  const target = e.target as HTMLElement
+  if (target.dataset.wiki) {
+    e.preventDefault()
+    handleWikiLinkClick(target.dataset.wiki)
+  } else if (target.dataset.tag) {
+    e.preventDefault()
+    handleTagClick(target.dataset.tag)
+  }
+})
 
 async function loadCurrentVault(): Promise<void> {
   try {
@@ -170,6 +280,8 @@ async function restoreTabs(): Promise<void> {
   }
   if (activeDocId) {
     loadActiveBuffer()
+    schedulePreview()
+    loadBacklinks()
   }
   updateDocStatus()
   renderTabs()
@@ -271,6 +383,8 @@ async function openFile(filePath: string): Promise<void> {
     loadActiveBuffer()
     updateDocStatus()
     renderTabs()
+    schedulePreview()
+    loadBacklinks()
   } catch (e) {
     alert((e as Error).message)
   }
@@ -325,6 +439,8 @@ async function doNew(): Promise<void> {
     loadActiveBuffer()
     updateDocStatus()
     renderTabs()
+    schedulePreview()
+    loadBacklinks()
   } catch (e) {
     alert((e as Error).message)
   }
@@ -343,6 +459,8 @@ async function closeDoc(docId: string): Promise<void> {
     if (activeDocId === docId) {
       activeDocId = result.newActiveId
       loadActiveBuffer()
+      schedulePreview()
+      loadBacklinks()
     }
     updateDocStatus()
     renderTabs()
@@ -406,6 +524,7 @@ editor.addEventListener('input', () => {
   if (tab && !tab.dirty) {
     setDirty(true)
   }
+  schedulePreview()
 })
 
 newDocBtn.addEventListener('click', () => {

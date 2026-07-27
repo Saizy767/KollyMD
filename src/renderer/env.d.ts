@@ -62,9 +62,28 @@ interface KollyError extends Error {
   code?: string
 }
 
+interface BacklinkDto {
+  sourcePath: string
+  sourceName: string
+}
+
+interface NoteRefDto {
+  path: string
+  name: string
+}
+
+interface KnowledgeApi {
+  render: (content: string) => Promise<{ html: string }>
+  findBacklinks: (noteName: string) => Promise<BacklinkDto[]>
+  findNotesByTag: (tag: string) => Promise<NoteRefDto[]>
+  resolveLink: (noteName: string) => Promise<{ path: string } | null>
+  createNoteFromLink: (noteName: string) => Promise<{ path: string }>
+}
+
 interface Window {
   api: {
     vault: VaultApi
     editor: EditorApi
+    knowledge: KnowledgeApi
   }
 }

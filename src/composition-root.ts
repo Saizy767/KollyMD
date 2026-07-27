@@ -24,6 +24,15 @@ import {
   EditorIpcHandler
 } from './modules/editor'
 import {
+  MarkedMarkdownRenderer,
+  RenderMarkdown,
+  FindBacklinks,
+  FindNotesByTag,
+  ResolveLink,
+  CreateNoteFromLink,
+  KnowledgeIpcHandler
+} from './modules/knowledge'
+import {
   JsonStateRepository,
   GetLastVault,
   SetLastVault,
@@ -56,6 +65,13 @@ export function bootstrap(ipcMain: IpcMain): void {
   const switchDocument = new SwitchDocument(docRepo)
   const getOpenDocuments = new GetOpenDocuments(docRepo)
 
+  const markdownRenderer = new MarkedMarkdownRenderer()
+  const renderMarkdown = new RenderMarkdown(markdownRenderer)
+  const findBacklinks = new FindBacklinks(vaultRepo, noteRepo)
+  const findNotesByTag = new FindNotesByTag(vaultRepo, noteRepo)
+  const resolveLink = new ResolveLink(vaultRepo, noteRepo)
+  const createNoteFromLink = new CreateNoteFromLink(vaultRepo, noteRepo)
+
   const lastVaultPath = getLastVault.execute()
   if (lastVaultPath) {
     vaultRepo.setCurrent(new Vault(lastVaultPath))
@@ -85,6 +101,16 @@ export function bootstrap(ipcMain: IpcMain): void {
     getCurrentVault
   )
   editorIpc.register()
+
+  const knowledgeIpc = new KnowledgeIpcHandler(
+    ipcMain,
+    renderMarkdown,
+    findBacklinks,
+    findNotesByTag,
+    resolveLink,
+    createNoteFromLink
+  )
+  knowledgeIpc.register()
 
   app.on('before-quit', () => {
     const result = getOpenDocuments.execute()

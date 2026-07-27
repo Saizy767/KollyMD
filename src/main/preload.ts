@@ -60,6 +60,17 @@ const api = {
     getOpenDocuments: () =>
       request<{ tabs: unknown[]; activeId: string | null }>('editor:get-open-documents'),
     getOpenTabs: () => request<string[]>('editor:get-open-tabs')
+  },
+  knowledge: {
+    render: (content: string) => request<{ html: string }>('knowledge:render', content),
+    findBacklinks: (noteName: string) =>
+      request<unknown[]>('knowledge:find-backlinks', noteName),
+    findNotesByTag: (tag: string) =>
+      request<unknown[]>('knowledge:find-notes-by-tag', tag),
+    resolveLink: (noteName: string) =>
+      request<{ path: string } | null>('knowledge:resolve-link', noteName),
+    createNoteFromLink: (noteName: string) =>
+      request<{ path: string }>('knowledge:create-note-from-link', noteName)
   }
 }
 
