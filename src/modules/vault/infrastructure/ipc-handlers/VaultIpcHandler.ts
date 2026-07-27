@@ -2,8 +2,9 @@ import { IpcMain, dialog, BrowserWindow } from 'electron'
 import type { OpenVault } from '../../application/use-cases/OpenVault'
 import type { GetCurrentVault } from '../../application/use-cases/GetCurrentVault'
 import type { ListNotes } from '../../application/use-cases/ListNotes'
+import type { CreateNote } from '../../application/use-cases/CreateNote'
 import type { SetLastVault } from '../../../state'
-import type { VaultDto, NoteEntryDto } from '../../application/dto'
+import type { VaultDto, NoteEntryDto, CreatedNoteDto } from '../../application/dto'
 
 export class VaultIpcHandler {
   constructor(
@@ -11,6 +12,7 @@ export class VaultIpcHandler {
     private readonly openVault: OpenVault,
     private readonly getCurrentVault: GetCurrentVault,
     private readonly listNotes: ListNotes,
+    private readonly createNote: CreateNote,
     private readonly setLastVault: SetLastVault
   ) {}
 
@@ -68,5 +70,23 @@ export class VaultIpcHandler {
         event.reply('kolly:reply', { reqId, error: true })
       }
     })
+
+    this.ipcMain.on(
+      'vault:create-note',
+      (event, payload: { reqId: string; args: [string, string, string] }) => {
+        const { reqId, args } = payload
+        const [folderPath, baseName, content] = args
+        try {
+          const dto: CreatedNoteDto = this.createNote.execute(folderPath, baseName, content)
+          event.reply('kolly:reply', { reqId, data: dto })
+        } catch (e) {
+          dialog.showMessageBox({
+            type: 'error',
+            message: (e as Error).message
+          })
+          event.reply('kolly:reply', { reqId, error: true })
+        }
+      }
+    )
   }
 }

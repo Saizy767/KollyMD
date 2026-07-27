@@ -5,6 +5,7 @@ import {
   OpenVault,
   GetCurrentVault,
   ListNotes,
+  CreateNote,
   VaultIpcHandler,
   Vault
 } from './modules/vault'
@@ -20,6 +21,7 @@ export function bootstrap(ipcMain: IpcMain): void {
   const openVault = new OpenVault(vaultRepo)
   const getCurrentVault = new GetCurrentVault(vaultRepo)
   const listNotes = new ListNotes(vaultRepo, noteRepo)
+  const createNote = new CreateNote(vaultRepo, noteRepo)
 
   const lastVaultPath = getLastVault.execute()
   if (lastVaultPath) {
@@ -31,6 +33,7 @@ export function bootstrap(ipcMain: IpcMain): void {
     openVault,
     getCurrentVault,
     listNotes,
+    createNote,
     setLastVault
   )
   vaultIpc.register()

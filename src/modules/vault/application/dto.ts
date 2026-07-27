@@ -8,3 +8,7 @@ export interface NoteEntryDto {
   isDirectory: boolean
   children: NoteEntryDto[]
 }
+
+export interface CreatedNoteDto {
+  path: string
+}

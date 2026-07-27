@@ -8,6 +8,26 @@ export class FsNoteRepository implements NoteRepository {
     return this.readDir(rootPath)
   }
 
+  createNote(folderPath: string, baseName: string, content: string): string {
+    const ext = path.extname(baseName)
+    const stem = path.basename(baseName, ext)
+    const dir = path.dirname(baseName)
+
+    let candidate = baseName
+    let counter = 0
+    while (fs.existsSync(path.join(folderPath, candidate))) {
+      counter++
+      if (counter > 1000) {
+        throw new Error(`Cannot create note: too many name collisions for "${baseName}"`)
+      }
+      candidate = path.join(dir, `${stem}-${counter}${ext}`)
+    }
+
+    const fullPath = path.join(folderPath, candidate)
+    fs.writeFileSync(fullPath, content, 'utf-8')
+    return fullPath
+  }
+
   private readDir(dirPath: string): NoteEntry[] {
     let names: string[]
     try {

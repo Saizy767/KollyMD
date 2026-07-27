@@ -13,6 +13,7 @@ interface VaultApi {
   openVault: () => Promise<VaultDto | null>
   getCurrentVault: () => Promise<VaultDto | null>
   listNotes: () => Promise<NoteEntryDto[]>
+  createNote: (folderPath: string, baseName: string, content: string) => Promise<{ path: string }>
 }
 
 interface Window {

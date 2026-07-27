@@ -35,7 +35,9 @@ const api = {
   vault: {
     openVault: () => request<{ rootPath: string } | null>('vault:open-vault'),
     getCurrentVault: () => request<{ rootPath: string } | null>('vault:get-current-vault'),
-    listNotes: () => request<unknown[]>('vault:list-notes')
+    listNotes: () => request<unknown[]>('vault:list-notes'),
+    createNote: (folderPath: string, baseName: string, content: string) =>
+      request<{ path: string }>('vault:create-note', folderPath, baseName, content)
   }
 }
 

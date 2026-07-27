@@ -3,18 +3,41 @@
 const selectDirBtn = document.getElementById('select-dir') as HTMLButtonElement
 const vaultPathEl = document.getElementById('vault-path') as HTMLSpanElement
 const refreshBtn = document.getElementById('refresh-explorer') as HTMLButtonElement
+const createBtn = document.getElementById('create-note') as HTMLButtonElement
 const explorerTree = document.getElementById('explorer-tree') as HTMLUListElement
 const explorerStatus = document.getElementById('explorer-status') as HTMLSpanElement
+
+let vaultRootPath: string | null = null
+let selectedFolder: string | null = null
+
+function updateSelectedFolderDisplay(): void {
+  if (selectedFolder) {
+    explorerStatus.textContent = 'Selected: ' + selectedFolder
+  } else if (vaultRootPath) {
+    explorerStatus.textContent = 'Selected: ' + vaultRootPath + ' (root)'
+  } else {
+    explorerStatus.textContent = 'No vault selected'
+  }
+  createBtn.disabled = !vaultRootPath
+}
+
+function folderMarker(entryPath: string): string {
+  return entryPath === selectedFolder ? '[*]' : '[-]'
+}
 
 async function loadCurrentVault(): Promise<void> {
   try {
     const vault = await window.api.vault.getCurrentVault()
     if (vault) {
+      vaultRootPath = vault.rootPath
+      selectedFolder = vault.rootPath
       vaultPathEl.textContent = vault.rootPath
       await loadExplorer()
     } else {
+      vaultRootPath = null
+      selectedFolder = null
       vaultPathEl.textContent = 'No vault selected'
-      explorerStatus.textContent = 'No vault selected'
+      updateSelectedFolderDisplay()
     }
   } catch (e) {
     vaultPathEl.textContent = '[Error: ' + (e as Error).message + ']'
@@ -22,9 +45,12 @@ async function loadCurrentVault(): Promise<void> {
 }
 
 async function loadExplorer(): Promise<void> {
+  if (!vaultRootPath) {
+    updateSelectedFolderDisplay()
+    return
+  }
   refreshBtn.textContent = 'Loading...'
   refreshBtn.disabled = true
-  explorerStatus.textContent = ''
   try {
     const entries = await window.api.vault.listNotes()
     explorerTree.innerHTML = ''
@@ -32,7 +58,7 @@ async function loadExplorer(): Promise<void> {
       explorerStatus.textContent = 'Vault is empty'
     } else {
       explorerTree.appendChild(renderTree(entries))
-      explorerStatus.textContent = entries.length + ' top-level entries'
+      updateSelectedFolderDisplay()
     }
   } catch (e) {
     explorerStatus.textContent = '[Error: ' + (e as Error).message + ']'
@@ -55,14 +81,17 @@ function renderEntry(entry: NoteEntryDto): HTMLLIElement {
 
   if (entry.isDirectory) {
     const toggle = document.createElement('button')
-    toggle.textContent = '[-] ' + entry.name
+    toggle.textContent = folderMarker(entry.path) + ' ' + entry.name
     const childUl = renderTree(entry.children)
     childUl.hidden = false
+    li.dataset.path = entry.path
 
     toggle.addEventListener('click', () => {
       const collapsed = !childUl.hidden
       childUl.hidden = collapsed
-      toggle.textContent = (collapsed ? '[+]' : '[-]') + ' ' + entry.name
+      selectedFolder = entry.path
+      updateSelectedFolderDisplay()
+      refreshAllMarkers()
     })
 
     li.appendChild(toggle)
@@ -79,12 +108,28 @@ function renderEntry(entry: NoteEntryDto): HTMLLIElement {
   return li
 }
 
+function refreshAllMarkers(): void {
+  const buttons = explorerTree.querySelectorAll('button')
+  for (const btn of buttons) {
+    const li = btn.parentElement
+    if (!li) continue
+    const childUl = li.querySelector('ul') as HTMLUListElement | null
+    if (!childUl) continue
+    const entryPath = (li.dataset.path as string) || ''
+    const name = btn.textContent?.split(' ').slice(1).join(' ') || ''
+    const marker = childUl.hidden ? '[+]' : folderMarker(entryPath)
+    btn.textContent = marker + ' ' + name
+  }
+}
+
 selectDirBtn.addEventListener('click', async () => {
   selectDirBtn.textContent = 'Loading...'
   selectDirBtn.disabled = true
   try {
     const vault = await window.api.vault.openVault()
     if (vault) {
+      vaultRootPath = vault.rootPath
+      selectedFolder = vault.rootPath
       vaultPathEl.textContent = vault.rootPath
       await loadExplorer()
     }
@@ -96,8 +141,35 @@ selectDirBtn.addEventListener('click', async () => {
   }
 })
 
+vaultPathEl.addEventListener('click', () => {
+  if (vaultRootPath) {
+    selectedFolder = vaultRootPath
+    updateSelectedFolderDisplay()
+    refreshAllMarkers()
+  }
+})
+
 refreshBtn.addEventListener('click', () => {
   loadExplorer()
+})
+
+createBtn.addEventListener('click', async () => {
+  if (!selectedFolder) {
+    alert('No folder selected')
+    return
+  }
+  createBtn.textContent = 'Creating...'
+  createBtn.disabled = true
+  try {
+    const result = await window.api.vault.createNote(selectedFolder, 'unnamedfile.md', '')
+    await loadExplorer()
+    alert('Created: ' + result.path)
+  } catch (e) {
+    alert((e as Error).message)
+  } finally {
+    createBtn.textContent = 'Create'
+    createBtn.disabled = !vaultRootPath
+  }
 })
 
 loadCurrentVault()
