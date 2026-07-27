@@ -54,8 +54,8 @@ async function setDirty(value: boolean): Promise<void> {
   dirtyFlag = value
   try {
     await window.api.editor.markDirty(value)
-  } catch {
-    // silent
+  } catch (e) {
+    console.warn('Failed to mark dirty', (e as Error).message)
   }
   updateDocStatus()
 }

@@ -2,9 +2,12 @@ import * as fs from 'fs'
 import * as path from 'path'
 import type { NoteRepository } from '../../domain/interfaces/NoteRepository'
 import { NoteEntry } from '../../domain/entities/NoteEntry'
-import { NoteNotFoundError } from '../../domain/errors/VaultErrors'
+import { NoteNotFoundError, NoteNameCollisionError } from '../../domain/errors/VaultErrors'
+import { Logger } from '../../../../shared/infrastructure/Logger'
 
 export class FsNoteRepository implements NoteRepository {
+  private readonly logger = new Logger()
+
   listEntries(rootPath: string): NoteEntry[] {
     return this.readDir(rootPath)
   }
@@ -19,7 +22,7 @@ export class FsNoteRepository implements NoteRepository {
     while (fs.existsSync(path.join(folderPath, candidate))) {
       counter++
       if (counter > 1000) {
-        throw new Error(`Cannot create note: too many name collisions for "${baseName}"`)
+        throw new NoteNameCollisionError(baseName)
       }
       candidate = path.join(dir, `${stem}-${counter}${ext}`)
     }
@@ -44,7 +47,8 @@ export class FsNoteRepository implements NoteRepository {
     let names: string[]
     try {
       names = fs.readdirSync(dirPath)
-    } catch {
+    } catch (e) {
+      this.logger.warn('Failed to read directory, returning empty list', { dirPath, error: (e as Error).message })
       return []
     }
 
@@ -57,7 +61,8 @@ export class FsNoteRepository implements NoteRepository {
       let isDir: boolean
       try {
         isDir = fs.statSync(fullPath).isDirectory()
-      } catch {
+      } catch (e) {
+        this.logger.warn('Failed to stat entry, skipping', { fullPath, error: (e as Error).message })
         continue
       }
 

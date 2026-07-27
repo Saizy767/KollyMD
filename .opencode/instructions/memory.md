@@ -207,33 +207,46 @@ KollyMD/
 
 ## 11. Current Status
 
-**Phase 1 (scaffold) — COMPLETE.** `npm start` launches an Electron window that loads
-`dist/renderer/index.html`; renderer script executes (`KollyMD renderer ready` logged via
-`webContents.on('console-message')`). Verified end-to-end on macOS arm64.
+### Completed phases
 
-Scaffold files in place: `package.json`, three `tsconfig*.json`, `electron-builder.yml`,
-`.gitignore`, `src/main/main.ts` (with `did-fail-load` / `console-message` / `render-process-gone`
-diagnostics), `src/main/preload.ts` (empty `contextBridge` api), `src/composition-root.ts`
-(empty `bootstrap(ipcMain)`), `src/renderer/{index.html,renderer.ts,env.d.ts}`.
+| Phase | Status | Notes |
+|---|---|---|
+| 1. Scaffold | COMPLETE | Electron + tsc, zero-CSS HTML, `composition-root.ts` in `src/` |
+| 2. `shared/` | COMPLETE | `DomainError`, `Logger` (levels error/warn/info/debug), `AppConfig.create(userDataPath)` |
+| 3. `state` module | COMPLETE | `WorkspaceState`, `JsonStateRepository` (now pure fs, takes `stateFilePath` via constructor), `GetLastVault`/`SetLastVault` |
+| 4. `vault` module | PARTIAL | open/list/create/read/write ✅; **`ChokidarFileWatcher` ❌** |
+| 5. `editor` module | COMPLETE (single-doc) | `Document` (immutable, readonly fields), `OpenDocument`/`SaveDocument`/`SaveAsDocument`/`NewDocument`/`MarkDirty` |
+| 6. Renderer v1 | PARTIAL | textarea, save/open/saveas/new ✅; **tabs ❌, auto-reload ❌, recent files UI ❌** |
+| 11. File explorer | COMPLETE | tree with expand/collapse (`[*]`/`[-]`/`[+]`), folder selection, Create button with auto-increment |
 
-**Architectural corrections applied during scaffold:**
+### Architectural audit fixes (applied)
 
-1. **`marked` moved from renderer -> main** (`knowledge` module infrastructure). The renderer
-   is a pure DOM+IPC layer with zero external imports, because the browser context cannot
-   resolve bare `node_modules` specifiers without a bundler (forbidden). `knowledge:render`
-   IPC channel added to the contract for MD->HTML rendering.
+1. **`NoteNameCollisionError`** domain error replaces generic `throw new Error()` in `FsNoteRepository.createNote` (was violating architecture.md:53)
+2. **`Logger`** created in `shared/infrastructure/` — all silent catches now log with context:
+   - `FsNoteRepository` (2 spots: readdirSync, statSync)
+   - `JsonStateRepository` (load failure)
+   - renderer `markDirty` uses `console.warn` (renderer cannot import from `shared/`)
+3. **`Document` fields `readonly`** — `path` and `dirty` are now immutable; `InMemoryDocumentRepository` already used immutable re-creation pattern
+4. **`AppConfig`** — `JsonStateRepository` no longer imports `electron`; `app.getPath('userData')` moved to `composition-root.ts`. State file path unchanged (existing user data preserved).
 
-2. **ESM in renderer is FORBIDDEN.** `<script type="module">` does NOT work with `file://`
-   protocol (Chromium blocks ESM via CORS on `file://`). Use plain `<script src="...">`.
-   Implication: renderer code cannot use `import`/`export`; multi-file renderer must use
-   global namespace pattern or IIFE concatenation (NOT ESM modules). `tsconfig.renderer.json`
-   still emits CommonJS-wrapped output (`"use strict"` + globals) — acceptable.
+### Architectural corrections applied during scaffold (still valid)
 
-3. **macOS Gatekeeper blocks unsigned/revoked Electron binaries.** The downloaded Electron
-   zip carries `com.apple.quarantine`; on first launch Gatekeeper moves the app to Bin as
-   "malware". Fix in `package.json` `postinstall`: after `install.js`, run
-   `xattr -r -d com.apple.quarantine node_modules/electron/dist/Electron.app` then
-   `codesign --force --deep --sign - node_modules/electron/dist/Electron.app`. Without this,
-   `npm start` fails with `ENOENT` (binary silently deleted) or a malware dialog.
+1. **`marked` runs in MAIN process** (`knowledge` module infrastructure) — NOT in renderer; browser context cannot resolve bare `node_modules` imports without a bundler (forbidden). `knowledge:render` IPC channel reserved for MD->HTML rendering.
 
-**Next action:** Phase 2 — `shared/` (`DomainError`, `Logger`, `AppConfig`).
+2. **ESM in renderer is FORBIDDEN.** `<script type="module">` does NOT work with `file://` protocol (Chromium blocks ESM via CORS on `file://`). Use plain `<script src="...">`. `tsconfig.renderer.json` emits CommonJS (`module: CommonJS` inherited from base) — no `export {}` in output. `env.d.ts` uses ambient declarations (no `export`/`import`).
+
+3. **macOS Gatekeeper blocks unsigned/revoked Electron binaries.** `package.json` `postinstall`: `node node_modules/electron/install.js && xattr -r -d com.apple.quarantine node_modules/electron/dist/Electron.app 2>/dev/null; codesign --force --deep --sign - node_modules/electron/dist/Electron.app 2>/dev/null; true`
+
+### Remaining work
+
+- **ChokidarFileWatcher** (vault) — auto-reload on disk changes
+- **Recent files** use cases + UI (state field exists, no use cases)
+- **Tabs** — multiple documents (extends editor module: multi-Document instead of single)
+- **`knowledge` module** — `[[wiki-links]]`, backlinks, tags, MD render via `marked` (in main), live preview in `#preview`
+- **`search` module** — full-text search
+
+### Next action
+
+Recommended: **`knowledge` module + live preview** — this is the core Obsidian-like functionality (wiki-links, backlinks, MD rendering). Large but highest-value step. Alternative: finish `vault` (ChokidarFileWatcher) + Recent files first for QoL completeness.
+
+Decision pending user confirmation.

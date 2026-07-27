@@ -1,4 +1,6 @@
 import type { IpcMain } from 'electron'
+import { app } from 'electron'
+import { AppConfig } from './shared/infrastructure/AppConfig'
 import {
   InMemoryVaultRepository,
   FsNoteRepository,
@@ -21,7 +23,8 @@ import {
 import { JsonStateRepository, GetLastVault, SetLastVault } from './modules/state'
 
 export function bootstrap(ipcMain: IpcMain): void {
-  const stateRepo = new JsonStateRepository()
+  const config = AppConfig.create(app.getPath('userData'))
+  const stateRepo = new JsonStateRepository(config.stateFilePath)
   const getLastVault = new GetLastVault(stateRepo)
   const setLastVault = new SetLastVault(stateRepo)
 

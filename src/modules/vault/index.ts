@@ -1,6 +1,6 @@
 export { Vault } from './domain/entities/Vault'
 export { NoteEntry } from './domain/entities/NoteEntry'
-export { InvalidVaultPathError, VaultNotOpenError, NoteNotFoundError } from './domain/errors/VaultErrors'
+export { InvalidVaultPathError, VaultNotOpenError, NoteNotFoundError, NoteNameCollisionError } from './domain/errors/VaultErrors'
 export type { VaultRepository } from './domain/interfaces/VaultRepository'
 export type { NoteRepository } from './domain/interfaces/NoteRepository'
 export { OpenVault } from './application/use-cases/OpenVault'

@@ -1,14 +1,15 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import { app } from 'electron'
 import type { StateRepository } from '../../domain/interfaces/StateRepository'
 import { WorkspaceState } from '../../domain/entities/WorkspaceState'
+import { Logger } from '../../../../shared/infrastructure/Logger'
 
 export class JsonStateRepository implements StateRepository {
   private readonly filePath: string
+  private readonly logger = new Logger()
 
-  constructor() {
-    this.filePath = path.join(app.getPath('userData'), 'kollymd-state.json')
+  constructor(stateFilePath: string) {
+    this.filePath = stateFilePath
   }
 
   load(): WorkspaceState {
@@ -20,7 +21,8 @@ export class JsonStateRepository implements StateRepository {
         data.recentFiles ?? [],
         data.openTabs ?? []
       )
-    } catch {
+    } catch (e) {
+      this.logger.warn('Failed to load state, returning empty', { filePath: this.filePath, error: (e as Error).message })
       return new WorkspaceState()
     }
   }
