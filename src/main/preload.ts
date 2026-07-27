@@ -34,7 +34,8 @@ ipcRenderer.on('kolly:reply', (_e: IpcRendererEvent, payload: ReplyPayload) => {
 const api = {
   vault: {
     openVault: () => request<{ rootPath: string } | null>('vault:open-vault'),
-    getCurrentVault: () => request<{ rootPath: string } | null>('vault:get-current-vault')
+    getCurrentVault: () => request<{ rootPath: string } | null>('vault:get-current-vault'),
+    listNotes: () => request<unknown[]>('vault:list-notes')
   }
 }
 

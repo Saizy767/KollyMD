@@ -1,14 +1,22 @@
-export interface VaultApi {
-  openVault: () => Promise<{ rootPath: string } | null>
-  getCurrentVault: () => Promise<{ rootPath: string } | null>
+interface VaultDto {
+  rootPath: string
 }
 
-export {}
+interface NoteEntryDto {
+  path: string
+  name: string
+  isDirectory: boolean
+  children: NoteEntryDto[]
+}
 
-declare global {
-  interface Window {
-    api: {
-      vault: VaultApi
-    }
+interface VaultApi {
+  openVault: () => Promise<VaultDto | null>
+  getCurrentVault: () => Promise<VaultDto | null>
+  listNotes: () => Promise<NoteEntryDto[]>
+}
+
+interface Window {
+  api: {
+    vault: VaultApi
   }
 }
