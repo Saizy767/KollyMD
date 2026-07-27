@@ -1,11 +1,14 @@
 import type { DocumentRepository } from '../../domain/interfaces/DocumentRepository'
 import { Document } from '../../domain/entities/Document'
+import type { NewDocumentDto } from '../dto'
 
 export class NewDocument {
   constructor(private readonly docRepo: DocumentRepository) {}
 
-  execute(): void {
-    this.docRepo.setCurrent(new Document(this.genId(), null, false))
+  execute(): NewDocumentDto {
+    const doc = new Document(this.genId(), null, false)
+    this.docRepo.openDocument(doc)
+    return { docId: doc.id }
   }
 
   private genId(): string {

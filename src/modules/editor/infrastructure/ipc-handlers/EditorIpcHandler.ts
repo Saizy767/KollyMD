@@ -1,12 +1,22 @@
 import { IpcMain, dialog, BrowserWindow } from 'electron'
 import * as path from 'path'
 import type { GetCurrentVault } from '../../../vault'
+import type { GetOpenTabs } from '../../../state'
 import type { OpenDocument } from '../../application/use-cases/OpenDocument'
 import type { SaveDocument } from '../../application/use-cases/SaveDocument'
 import type { SaveAsDocument } from '../../application/use-cases/SaveAsDocument'
 import type { NewDocument } from '../../application/use-cases/NewDocument'
 import type { MarkDirty } from '../../application/use-cases/MarkDirty'
-import type { OpenDocumentDto, SavedDocumentDto } from '../../application/dto'
+import type { CloseDocument } from '../../application/use-cases/CloseDocument'
+import type { SwitchDocument } from '../../application/use-cases/SwitchDocument'
+import type { GetOpenDocuments } from '../../application/use-cases/GetOpenDocuments'
+import type {
+  OpenDocumentDto,
+  SavedDocumentDto,
+  NewDocumentDto,
+  CloseDocumentDto,
+  OpenTabsDto
+} from '../../application/dto'
 import { DocumentHasNoPathError } from '../../domain/errors/EditorErrors'
 
 export class EditorIpcHandler {
@@ -17,6 +27,10 @@ export class EditorIpcHandler {
     private readonly saveAsDocument: SaveAsDocument,
     private readonly newDocument: NewDocument,
     private readonly markDirty: MarkDirty,
+    private readonly closeDocument: CloseDocument,
+    private readonly switchDocument: SwitchDocument,
+    private readonly getOpenDocuments: GetOpenDocuments,
+    private readonly getOpenTabs: GetOpenTabs,
     private readonly getCurrentVault: GetCurrentVault
   ) {}
 
@@ -104,8 +118,8 @@ export class EditorIpcHandler {
     this.ipcMain.on('editor:new-document', (event, payload: { reqId: string }) => {
       const { reqId } = payload
       try {
-        this.newDocument.execute()
-        event.reply('kolly:reply', { reqId, data: null })
+        const dto: NewDocumentDto = this.newDocument.execute()
+        event.reply('kolly:reply', { reqId, data: dto })
       } catch (e) {
         dialog.showMessageBox({
           type: 'error',
@@ -117,16 +131,72 @@ export class EditorIpcHandler {
 
     this.ipcMain.on(
       'editor:mark-dirty',
-      (event, payload: { reqId: string; args: [boolean] }) => {
+      (event, payload: { reqId: string; args: [string, boolean] }) => {
         const { reqId, args } = payload
-        const [dirty] = args
+        const [docId, dirty] = args
         try {
-          this.markDirty.execute(dirty)
+          this.markDirty.execute(docId, dirty)
           event.reply('kolly:reply', { reqId, data: null })
         } catch (e) {
           event.reply('kolly:reply', { reqId, error: true })
         }
       }
     )
+
+    this.ipcMain.on(
+      'editor:close-document',
+      (event, payload: { reqId: string; args: [string] }) => {
+        const { reqId, args } = payload
+        const [docId] = args
+        try {
+          const dto: CloseDocumentDto = this.closeDocument.execute(docId)
+          event.reply('kolly:reply', { reqId, data: dto })
+        } catch (e) {
+          dialog.showMessageBox({
+            type: 'error',
+            message: (e as Error).message
+          })
+          event.reply('kolly:reply', { reqId, error: true })
+        }
+      }
+    )
+
+    this.ipcMain.on(
+      'editor:switch-document',
+      (event, payload: { reqId: string; args: [string] }) => {
+        const { reqId, args } = payload
+        const [docId] = args
+        try {
+          this.switchDocument.execute(docId)
+          event.reply('kolly:reply', { reqId, data: null })
+        } catch (e) {
+          dialog.showMessageBox({
+            type: 'error',
+            message: (e as Error).message
+          })
+          event.reply('kolly:reply', { reqId, error: true })
+        }
+      }
+    )
+
+    this.ipcMain.on('editor:get-open-documents', (event, payload: { reqId: string }) => {
+      const { reqId } = payload
+      try {
+        const dto: OpenTabsDto = this.getOpenDocuments.execute()
+        event.reply('kolly:reply', { reqId, data: dto })
+      } catch (e) {
+        event.reply('kolly:reply', { reqId, error: true })
+      }
+    })
+
+    this.ipcMain.on('editor:get-open-tabs', (event, payload: { reqId: string }) => {
+      const { reqId } = payload
+      try {
+        const paths = this.getOpenTabs.execute()
+        event.reply('kolly:reply', { reqId, data: paths })
+      } catch (e) {
+        event.reply('kolly:reply', { reqId, error: true })
+      }
+    })
   }
 }

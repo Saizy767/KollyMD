@@ -12,10 +12,18 @@ const saveDocBtn = document.getElementById('save-doc') as HTMLButtonElement
 const saveAsDocBtn = document.getElementById('save-as-doc') as HTMLButtonElement
 const docStatus = document.getElementById('doc-status') as HTMLSpanElement
 const editor = document.getElementById('editor') as HTMLTextAreaElement
+const tabsList = document.getElementById('tabs-list') as HTMLUListElement
 
 let vaultRootPath: string | null = null
 let selectedFolder: string | null = null
-let currentPath: string | null = null
+
+interface TabState {
+  path: string | null
+  content: string
+  dirty: boolean
+}
+const tabs = new Map<string, TabState>()
+let activeDocId: string | null = null
 
 function updateSelectedFolderDisplay(): void {
   if (selectedFolder) {
@@ -32,32 +40,95 @@ function folderMarker(entryPath: string): string {
   return entryPath === selectedFolder ? '[*]' : '[-]'
 }
 
-function docName(): string {
-  if (!currentPath) return 'untitled'
-  const parts = currentPath.split('/')
+function docName(path: string | null): string {
+  if (!path) return 'untitled'
+  const parts = path.split('/')
   return parts[parts.length - 1]
 }
 
-async function updateDocStatus(): Promise<void> {
-  const dirty = currentPath === null ? false : await isDirty()
-  const prefix = dirty ? '[unsaved] ' : ''
-  docStatus.textContent = prefix + docName()
+function activeTab(): TabState | null {
+  if (!activeDocId) return null
+  return tabs.get(activeDocId) ?? null
 }
 
-let dirtyFlag = false
+function updateDocStatus(): void {
+  const tab = activeTab()
+  if (!tab) {
+    docStatus.textContent = 'No document'
+    return
+  }
+  const prefix = tab.dirty ? '[unsaved] ' : ''
+  docStatus.textContent = prefix + docName(tab.path)
+}
 
-async function isDirty(): Promise<boolean> {
-  return dirtyFlag
+function renderTabs(): void {
+  tabsList.innerHTML = ''
+  for (const [docId, tab] of tabs) {
+    const li = document.createElement('li')
+    if (docId === activeDocId) {
+      li.dataset.active = 'true'
+    }
+
+    const label = document.createElement('span')
+    const prefix = docId === activeDocId ? '[Active] ' : ''
+    const dirtyMark = tab.dirty ? '[unsaved] ' : ''
+    label.textContent = prefix + dirtyMark + docName(tab.path)
+    label.addEventListener('click', () => {
+      switchToDoc(docId)
+    })
+
+    const closeBtn = document.createElement('button')
+    closeBtn.textContent = 'Close'
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation()
+      closeDoc(docId)
+    })
+
+    li.appendChild(label)
+    li.appendChild(closeBtn)
+    tabsList.appendChild(li)
+  }
+}
+
+function loadActiveBuffer(): void {
+  const tab = activeTab()
+  if (tab) {
+    editor.value = tab.content
+  } else {
+    editor.value = ''
+  }
+}
+
+async function switchToDoc(docId: string): Promise<void> {
+  if (activeDocId === docId) return
+  if (activeDocId) {
+    const cur = tabs.get(activeDocId)
+    if (cur) cur.content = editor.value
+  }
+  try {
+    await window.api.editor.switchDocument(docId)
+  } catch (e) {
+    console.warn('Failed to switch document', (e as Error).message)
+  }
+  activeDocId = docId
+  loadActiveBuffer()
+  updateDocStatus()
+  renderTabs()
 }
 
 async function setDirty(value: boolean): Promise<void> {
-  dirtyFlag = value
-  try {
-    await window.api.editor.markDirty(value)
-  } catch (e) {
-    console.warn('Failed to mark dirty', (e as Error).message)
+  const tab = activeTab()
+  if (!tab) return
+  tab.dirty = value
+  if (activeDocId) {
+    try {
+      await window.api.editor.markDirty(activeDocId, value)
+    } catch (e) {
+      console.warn('Failed to mark dirty', (e as Error).message)
+    }
   }
   updateDocStatus()
+  renderTabs()
 }
 
 async function loadCurrentVault(): Promise<void> {
@@ -68,6 +139,7 @@ async function loadCurrentVault(): Promise<void> {
       selectedFolder = vault.rootPath
       vaultPathEl.textContent = vault.rootPath
       await loadExplorer()
+      await restoreTabs()
     } else {
       vaultRootPath = null
       selectedFolder = null
@@ -77,6 +149,30 @@ async function loadCurrentVault(): Promise<void> {
   } catch (e) {
     vaultPathEl.textContent = '[Error: ' + (e as Error).message + ']'
   }
+}
+
+async function restoreTabs(): Promise<void> {
+  let paths: string[]
+  try {
+    paths = await window.api.editor.getOpenTabs()
+  } catch (e) {
+    console.warn('Failed to get open tabs', (e as Error).message)
+    return
+  }
+  for (const p of paths) {
+    try {
+      const result = await window.api.editor.openDocument(p)
+      tabs.set(result.docId, { path: result.path, content: result.content, dirty: false })
+      activeDocId = result.docId
+    } catch (e) {
+      console.warn('Failed to restore tab', p, (e as Error).message)
+    }
+  }
+  if (activeDocId) {
+    loadActiveBuffer()
+  }
+  updateDocStatus()
+  renderTabs()
 }
 
 async function loadExplorer(): Promise<void> {
@@ -158,23 +254,37 @@ function refreshAllMarkers(): void {
 }
 
 async function openFile(filePath: string): Promise<void> {
+  if (activeDocId) {
+    const cur = tabs.get(activeDocId)
+    if (cur) cur.content = editor.value
+  }
   try {
     const result = await window.api.editor.openDocument(filePath)
-    currentPath = result.path
-    editor.value = result.content
-    dirtyFlag = false
-    await updateDocStatus()
+    if (result.alreadyOpen) {
+      activeDocId = result.docId
+      const tab = tabs.get(result.docId)
+      if (tab) tab.content = result.content
+    } else {
+      tabs.set(result.docId, { path: result.path, content: result.content, dirty: false })
+      activeDocId = result.docId
+    }
+    loadActiveBuffer()
+    updateDocStatus()
+    renderTabs()
   } catch (e) {
     alert((e as Error).message)
   }
 }
 
 async function doSave(): Promise<void> {
-  const content = editor.value
+  const tab = activeTab()
+  if (!tab) return
+  tab.content = editor.value
   try {
-    await window.api.editor.saveDocument(content)
-    dirtyFlag = false
-    await updateDocStatus()
+    await window.api.editor.saveDocument(tab.content)
+    tab.dirty = false
+    updateDocStatus()
+    renderTabs()
   } catch (e) {
     const kollyErr = e as KollyError
     if (kollyErr.code === 'DOCUMENT_HAS_NO_PATH') {
@@ -186,13 +296,16 @@ async function doSave(): Promise<void> {
 }
 
 async function doSaveAs(): Promise<void> {
-  const content = editor.value
+  const tab = activeTab()
+  if (!tab) return
+  tab.content = editor.value
   try {
-    const result = await window.api.editor.saveAsDocument(content)
+    const result = await window.api.editor.saveAsDocument(tab.content)
     if (result) {
-      currentPath = result.path
-      dirtyFlag = false
-      await updateDocStatus()
+      tab.path = result.path
+      tab.dirty = false
+      updateDocStatus()
+      renderTabs()
       await loadExplorer()
     }
   } catch (e) {
@@ -201,12 +314,38 @@ async function doSaveAs(): Promise<void> {
 }
 
 async function doNew(): Promise<void> {
+  if (activeDocId) {
+    const cur = tabs.get(activeDocId)
+    if (cur) cur.content = editor.value
+  }
   try {
-    await window.api.editor.newDocument()
-    currentPath = null
-    editor.value = ''
-    dirtyFlag = false
-    await updateDocStatus()
+    const result = await window.api.editor.newDocument()
+    tabs.set(result.docId, { path: null, content: '', dirty: false })
+    activeDocId = result.docId
+    loadActiveBuffer()
+    updateDocStatus()
+    renderTabs()
+  } catch (e) {
+    alert((e as Error).message)
+  }
+}
+
+async function closeDoc(docId: string): Promise<void> {
+  const tab = tabs.get(docId)
+  if (!tab) return
+  if (tab.dirty) {
+    const confirmed = confirm('Discard unsaved changes in ' + docName(tab.path) + '?')
+    if (!confirmed) return
+  }
+  try {
+    const result = await window.api.editor.closeDocument(docId)
+    tabs.delete(docId)
+    if (activeDocId === docId) {
+      activeDocId = result.newActiveId
+      loadActiveBuffer()
+    }
+    updateDocStatus()
+    renderTabs()
   } catch (e) {
     alert((e as Error).message)
   }
@@ -263,7 +402,8 @@ createBtn.addEventListener('click', async () => {
 })
 
 editor.addEventListener('input', () => {
-  if (!dirtyFlag) {
+  const tab = activeTab()
+  if (tab && !tab.dirty) {
     setDirty(true)
   }
 })

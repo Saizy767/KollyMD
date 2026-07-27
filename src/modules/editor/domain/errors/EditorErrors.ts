@@ -15,3 +15,11 @@ export class DocumentHasNoPathError extends DomainError {
     super('Document has no path; use Save As instead')
   }
 }
+
+export class TabNotFoundError extends DomainError {
+  readonly code = 'TAB_NOT_FOUND'
+
+  constructor(id: string) {
+    super(`Tab not found: "${id}"`)
+  }
+}

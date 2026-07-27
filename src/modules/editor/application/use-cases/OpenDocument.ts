@@ -10,9 +10,17 @@ export class OpenDocument {
   ) {}
 
   execute(filePath: string): OpenDocumentDto {
+    const existing = this.docRepo.getOpenDocuments().find(d => d.path === filePath)
+    if (existing) {
+      this.docRepo.setActive(existing.id)
+      const content = this.noteRepo.readNote(filePath)
+      return { docId: existing.id, path: filePath, content, alreadyOpen: true }
+    }
+
     const content = this.noteRepo.readNote(filePath)
-    this.docRepo.setCurrent(new Document(this.genId(), filePath, false))
-    return { path: filePath, content }
+    const doc = new Document(this.genId(), filePath, false)
+    this.docRepo.openDocument(doc)
+    return { docId: doc.id, path: filePath, content, alreadyOpen: false }
   }
 
   private genId(): string {

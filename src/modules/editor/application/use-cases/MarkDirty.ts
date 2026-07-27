@@ -3,7 +3,7 @@ import type { DocumentRepository } from '../../domain/interfaces/DocumentReposit
 export class MarkDirty {
   constructor(private readonly docRepo: DocumentRepository) {}
 
-  execute(dirty: boolean): void {
-    this.docRepo.markDirty(dirty)
+  execute(docId: string, dirty: boolean): void {
+    this.docRepo.markDirty(docId, dirty)
   }
 }

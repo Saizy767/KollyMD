@@ -9,7 +9,7 @@ export class SaveDocument {
   ) {}
 
   execute(content: string): void {
-    const doc = this.docRepo.getCurrent()
+    const doc = this.docRepo.getActiveDocument()
     if (!doc) {
       throw new NoDocumentOpenError()
     }
@@ -17,6 +17,6 @@ export class SaveDocument {
       throw new DocumentHasNoPathError()
     }
     this.noteRepo.writeNote(doc.path, content)
-    this.docRepo.markDirty(false)
+    this.docRepo.markDirty(doc.id, false)
   }
 }

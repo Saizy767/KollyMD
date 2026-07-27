@@ -1,5 +1,6 @@
 import type { DocumentRepository } from '../../domain/interfaces/DocumentRepository'
 import type { NoteRepository } from '../../../vault'
+import { NoDocumentOpenError } from '../../domain/errors/EditorErrors'
 import type { SavedDocumentDto } from '../dto'
 
 export class SaveAsDocument {
@@ -9,9 +10,13 @@ export class SaveAsDocument {
   ) {}
 
   execute(newPath: string, content: string): SavedDocumentDto {
+    const doc = this.docRepo.getActiveDocument()
+    if (!doc) {
+      throw new NoDocumentOpenError()
+    }
     this.noteRepo.writeNote(newPath, content)
-    this.docRepo.setPath(newPath)
-    this.docRepo.markDirty(false)
+    this.docRepo.setPath(doc.id, newPath)
+    this.docRepo.markDirty(doc.id, false)
     return { path: newPath }
   }
 }

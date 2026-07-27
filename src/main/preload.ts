@@ -44,12 +44,22 @@ const api = {
   },
   editor: {
     openDocument: (filePath: string) =>
-      request<{ path: string; content: string }>('editor:open-document', filePath),
+      request<{ docId: string; path: string; content: string; alreadyOpen: boolean }>(
+        'editor:open-document',
+        filePath
+      ),
     saveDocument: (content: string) => request<void>('editor:save-document', content),
     saveAsDocument: (content: string) =>
       request<{ path: string } | null>('editor:save-as-document', content),
-    newDocument: () => request<void>('editor:new-document'),
-    markDirty: (dirty: boolean) => request<void>('editor:mark-dirty', dirty)
+    newDocument: () => request<{ docId: string }>('editor:new-document'),
+    markDirty: (docId: string, dirty: boolean) =>
+      request<void>('editor:mark-dirty', docId, dirty),
+    closeDocument: (docId: string) =>
+      request<{ newActiveId: string | null }>('editor:close-document', docId),
+    switchDocument: (docId: string) => request<void>('editor:switch-document', docId),
+    getOpenDocuments: () =>
+      request<{ tabs: unknown[]; activeId: string | null }>('editor:get-open-documents'),
+    getOpenTabs: () => request<string[]>('editor:get-open-tabs')
   }
 }
 

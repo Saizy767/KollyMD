@@ -18,15 +18,26 @@ import {
   SaveAsDocument,
   NewDocument,
   MarkDirty,
+  CloseDocument,
+  SwitchDocument,
+  GetOpenDocuments,
   EditorIpcHandler
 } from './modules/editor'
-import { JsonStateRepository, GetLastVault, SetLastVault } from './modules/state'
+import {
+  JsonStateRepository,
+  GetLastVault,
+  SetLastVault,
+  GetOpenTabs,
+  SetOpenTabs
+} from './modules/state'
 
 export function bootstrap(ipcMain: IpcMain): void {
   const config = AppConfig.create(app.getPath('userData'))
   const stateRepo = new JsonStateRepository(config.stateFilePath)
   const getLastVault = new GetLastVault(stateRepo)
   const setLastVault = new SetLastVault(stateRepo)
+  const getOpenTabs = new GetOpenTabs(stateRepo)
+  const setOpenTabs = new SetOpenTabs(stateRepo)
 
   const vaultRepo = new InMemoryVaultRepository()
   const noteRepo = new FsNoteRepository()
@@ -41,6 +52,9 @@ export function bootstrap(ipcMain: IpcMain): void {
   const saveAsDocument = new SaveAsDocument(docRepo, noteRepo)
   const newDocument = new NewDocument(docRepo)
   const markDirty = new MarkDirty(docRepo)
+  const closeDocument = new CloseDocument(docRepo)
+  const switchDocument = new SwitchDocument(docRepo)
+  const getOpenDocuments = new GetOpenDocuments(docRepo)
 
   const lastVaultPath = getLastVault.execute()
   if (lastVaultPath) {
@@ -64,7 +78,19 @@ export function bootstrap(ipcMain: IpcMain): void {
     saveAsDocument,
     newDocument,
     markDirty,
+    closeDocument,
+    switchDocument,
+    getOpenDocuments,
+    getOpenTabs,
     getCurrentVault
   )
   editorIpc.register()
+
+  app.on('before-quit', () => {
+    const result = getOpenDocuments.execute()
+    const paths = result.tabs
+      .filter(t => t.path !== null)
+      .map(t => t.path as string)
+    setOpenTabs.execute(paths)
+  })
 }
