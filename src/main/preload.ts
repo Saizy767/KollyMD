@@ -18,6 +18,7 @@ interface ReplyPayload {
   reqId: string
   data?: unknown
   error?: boolean
+  code?: string
 }
 
 ipcRenderer.on('kolly:reply', (_e: IpcRendererEvent, payload: ReplyPayload) => {
@@ -25,7 +26,9 @@ ipcRenderer.on('kolly:reply', (_e: IpcRendererEvent, payload: ReplyPayload) => {
   if (!p) return
   pending.delete(payload.reqId)
   if (payload.error) {
-    p.reject(new Error('Request failed'))
+    const err = new Error('Request failed') as Error & { code?: string }
+    err.code = payload.code
+    p.reject(err)
   } else {
     p.resolve(payload.data ?? null)
   }
@@ -38,6 +41,15 @@ const api = {
     listNotes: () => request<unknown[]>('vault:list-notes'),
     createNote: (folderPath: string, baseName: string, content: string) =>
       request<{ path: string }>('vault:create-note', folderPath, baseName, content)
+  },
+  editor: {
+    openDocument: (filePath: string) =>
+      request<{ path: string; content: string }>('editor:open-document', filePath),
+    saveDocument: (content: string) => request<void>('editor:save-document', content),
+    saveAsDocument: (content: string) =>
+      request<{ path: string } | null>('editor:save-as-document', content),
+    newDocument: () => request<void>('editor:new-document'),
+    markDirty: (dirty: boolean) => request<void>('editor:mark-dirty', dirty)
   }
 }
 

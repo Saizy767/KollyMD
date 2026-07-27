@@ -12,3 +12,8 @@ export interface NoteEntryDto {
 export interface CreatedNoteDto {
   path: string
 }
+
+export interface NoteContentDto {
+  path: string
+  content: string
+}

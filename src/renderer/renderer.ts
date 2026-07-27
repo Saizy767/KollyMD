@@ -7,8 +7,15 @@ const createBtn = document.getElementById('create-note') as HTMLButtonElement
 const explorerTree = document.getElementById('explorer-tree') as HTMLUListElement
 const explorerStatus = document.getElementById('explorer-status') as HTMLSpanElement
 
+const newDocBtn = document.getElementById('new-doc') as HTMLButtonElement
+const saveDocBtn = document.getElementById('save-doc') as HTMLButtonElement
+const saveAsDocBtn = document.getElementById('save-as-doc') as HTMLButtonElement
+const docStatus = document.getElementById('doc-status') as HTMLSpanElement
+const editor = document.getElementById('editor') as HTMLTextAreaElement
+
 let vaultRootPath: string | null = null
 let selectedFolder: string | null = null
+let currentPath: string | null = null
 
 function updateSelectedFolderDisplay(): void {
   if (selectedFolder) {
@@ -23,6 +30,34 @@ function updateSelectedFolderDisplay(): void {
 
 function folderMarker(entryPath: string): string {
   return entryPath === selectedFolder ? '[*]' : '[-]'
+}
+
+function docName(): string {
+  if (!currentPath) return 'untitled'
+  const parts = currentPath.split('/')
+  return parts[parts.length - 1]
+}
+
+async function updateDocStatus(): Promise<void> {
+  const dirty = currentPath === null ? false : await isDirty()
+  const prefix = dirty ? '[unsaved] ' : ''
+  docStatus.textContent = prefix + docName()
+}
+
+let dirtyFlag = false
+
+async function isDirty(): Promise<boolean> {
+  return dirtyFlag
+}
+
+async function setDirty(value: boolean): Promise<void> {
+  dirtyFlag = value
+  try {
+    await window.api.editor.markDirty(value)
+  } catch {
+    // silent
+  }
+  updateDocStatus()
 }
 
 async function loadCurrentVault(): Promise<void> {
@@ -100,7 +135,7 @@ function renderEntry(entry: NoteEntryDto): HTMLLIElement {
     const span = document.createElement('span')
     span.textContent = entry.name
     span.addEventListener('click', () => {
-      alert(entry.path)
+      openFile(entry.path)
     })
     li.appendChild(span)
   }
@@ -119,6 +154,61 @@ function refreshAllMarkers(): void {
     const name = btn.textContent?.split(' ').slice(1).join(' ') || ''
     const marker = childUl.hidden ? '[+]' : folderMarker(entryPath)
     btn.textContent = marker + ' ' + name
+  }
+}
+
+async function openFile(filePath: string): Promise<void> {
+  try {
+    const result = await window.api.editor.openDocument(filePath)
+    currentPath = result.path
+    editor.value = result.content
+    dirtyFlag = false
+    await updateDocStatus()
+  } catch (e) {
+    alert((e as Error).message)
+  }
+}
+
+async function doSave(): Promise<void> {
+  const content = editor.value
+  try {
+    await window.api.editor.saveDocument(content)
+    dirtyFlag = false
+    await updateDocStatus()
+  } catch (e) {
+    const kollyErr = e as KollyError
+    if (kollyErr.code === 'DOCUMENT_HAS_NO_PATH') {
+      await doSaveAs()
+    } else {
+      alert((e as Error).message)
+    }
+  }
+}
+
+async function doSaveAs(): Promise<void> {
+  const content = editor.value
+  try {
+    const result = await window.api.editor.saveAsDocument(content)
+    if (result) {
+      currentPath = result.path
+      dirtyFlag = false
+      await updateDocStatus()
+      await loadExplorer()
+    }
+  } catch (e) {
+    alert((e as Error).message)
+  }
+}
+
+async function doNew(): Promise<void> {
+  try {
+    await window.api.editor.newDocument()
+    currentPath = null
+    editor.value = ''
+    dirtyFlag = false
+    await updateDocStatus()
+  } catch (e) {
+    alert((e as Error).message)
   }
 }
 
@@ -172,4 +262,30 @@ createBtn.addEventListener('click', async () => {
   }
 })
 
+editor.addEventListener('input', () => {
+  if (!dirtyFlag) {
+    setDirty(true)
+  }
+})
+
+newDocBtn.addEventListener('click', () => {
+  doNew()
+})
+
+saveDocBtn.addEventListener('click', () => {
+  doSave()
+})
+
+saveAsDocBtn.addEventListener('click', () => {
+  doSaveAs()
+})
+
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+    e.preventDefault()
+    doSave()
+  }
+})
+
+updateDocStatus()
 loadCurrentVault()

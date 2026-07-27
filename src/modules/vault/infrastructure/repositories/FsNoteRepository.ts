@@ -2,6 +2,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import type { NoteRepository } from '../../domain/interfaces/NoteRepository'
 import { NoteEntry } from '../../domain/entities/NoteEntry'
+import { NoteNotFoundError } from '../../domain/errors/VaultErrors'
 
 export class FsNoteRepository implements NoteRepository {
   listEntries(rootPath: string): NoteEntry[] {
@@ -26,6 +27,17 @@ export class FsNoteRepository implements NoteRepository {
     const fullPath = path.join(folderPath, candidate)
     fs.writeFileSync(fullPath, content, 'utf-8')
     return fullPath
+  }
+
+  readNote(filePath: string): string {
+    if (!fs.existsSync(filePath)) {
+      throw new NoteNotFoundError(filePath)
+    }
+    return fs.readFileSync(filePath, 'utf-8')
+  }
+
+  writeNote(filePath: string, content: string): void {
+    fs.writeFileSync(filePath, content, 'utf-8')
   }
 
   private readDir(dirPath: string): NoteEntry[] {

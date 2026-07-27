@@ -15,3 +15,11 @@ export class VaultNotOpenError extends DomainError {
     super('No vault is currently open')
   }
 }
+
+export class NoteNotFoundError extends DomainError {
+  readonly code = 'NOTE_NOT_FOUND'
+
+  constructor(path: string) {
+    super(`Note not found: "${path}"`)
+  }
+}

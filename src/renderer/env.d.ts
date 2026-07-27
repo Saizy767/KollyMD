@@ -16,8 +16,30 @@ interface VaultApi {
   createNote: (folderPath: string, baseName: string, content: string) => Promise<{ path: string }>
 }
 
+interface OpenDocumentDto {
+  path: string
+  content: string
+}
+
+interface SavedDocumentDto {
+  path: string
+}
+
+interface EditorApi {
+  openDocument: (filePath: string) => Promise<OpenDocumentDto>
+  saveDocument: (content: string) => Promise<void>
+  saveAsDocument: (content: string) => Promise<SavedDocumentDto | null>
+  newDocument: () => Promise<void>
+  markDirty: (dirty: boolean) => Promise<void>
+}
+
+interface KollyError extends Error {
+  code?: string
+}
+
 interface Window {
   api: {
     vault: VaultApi
+    editor: EditorApi
   }
 }

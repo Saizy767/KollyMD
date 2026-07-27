@@ -9,6 +9,15 @@ import {
   VaultIpcHandler,
   Vault
 } from './modules/vault'
+import {
+  InMemoryDocumentRepository,
+  OpenDocument,
+  SaveDocument,
+  SaveAsDocument,
+  NewDocument,
+  MarkDirty,
+  EditorIpcHandler
+} from './modules/editor'
 import { JsonStateRepository, GetLastVault, SetLastVault } from './modules/state'
 
 export function bootstrap(ipcMain: IpcMain): void {
@@ -22,6 +31,13 @@ export function bootstrap(ipcMain: IpcMain): void {
   const getCurrentVault = new GetCurrentVault(vaultRepo)
   const listNotes = new ListNotes(vaultRepo, noteRepo)
   const createNote = new CreateNote(vaultRepo, noteRepo)
+
+  const docRepo = new InMemoryDocumentRepository()
+  const openDocument = new OpenDocument(docRepo, noteRepo)
+  const saveDocument = new SaveDocument(docRepo, noteRepo)
+  const saveAsDocument = new SaveAsDocument(docRepo, noteRepo)
+  const newDocument = new NewDocument(docRepo)
+  const markDirty = new MarkDirty(docRepo)
 
   const lastVaultPath = getLastVault.execute()
   if (lastVaultPath) {
@@ -37,4 +53,15 @@ export function bootstrap(ipcMain: IpcMain): void {
     setLastVault
   )
   vaultIpc.register()
+
+  const editorIpc = new EditorIpcHandler(
+    ipcMain,
+    openDocument,
+    saveDocument,
+    saveAsDocument,
+    newDocument,
+    markDirty,
+    getCurrentVault
+  )
+  editorIpc.register()
 }
