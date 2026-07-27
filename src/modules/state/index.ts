@@ -1,0 +1,5 @@
+export { WorkspaceState } from './domain/entities/WorkspaceState'
+export type { StateRepository } from './domain/interfaces/StateRepository'
+export { GetLastVault } from './application/use-cases/GetLastVault'
+export { SetLastVault } from './application/use-cases/SetLastVault'
+export { JsonStateRepository } from './infrastructure/repositories/JsonStateRepository'

@@ -1,0 +1,8 @@
+export { Vault } from './domain/entities/Vault'
+export { InvalidVaultPathError, VaultNotOpenError } from './domain/errors/VaultErrors'
+export type { VaultRepository } from './domain/interfaces/VaultRepository'
+export { OpenVault } from './application/use-cases/OpenVault'
+export { GetCurrentVault } from './application/use-cases/GetCurrentVault'
+export type { VaultDto } from './application/dto'
+export { InMemoryVaultRepository } from './infrastructure/repositories/InMemoryVaultRepository'
+export { VaultIpcHandler } from './infrastructure/ipc-handlers/VaultIpcHandler'
