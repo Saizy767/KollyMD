@@ -71,6 +71,9 @@ const api = {
       request<{ path: string } | null>('knowledge:resolve-link', noteName),
     createNoteFromLink: (noteName: string) =>
       request<{ path: string }>('knowledge:create-note-from-link', noteName)
+  },
+  search: {
+    searchNotes: (query: string) => request<unknown[]>('search:search-notes', query)
   }
 }
 

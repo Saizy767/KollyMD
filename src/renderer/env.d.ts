@@ -80,10 +80,22 @@ interface KnowledgeApi {
   createNoteFromLink: (noteName: string) => Promise<{ path: string }>
 }
 
+interface SearchResultDto {
+  path: string
+  name: string
+  snippet: string
+  matchCount: number
+}
+
+interface SearchApi {
+  searchNotes: (query: string) => Promise<SearchResultDto[]>
+}
+
 interface Window {
   api: {
     vault: VaultApi
     editor: EditorApi
     knowledge: KnowledgeApi
+    search: SearchApi
   }
 }

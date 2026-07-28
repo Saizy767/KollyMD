@@ -213,10 +213,12 @@ KollyMD/
 |---|---|---|
 | 1. Scaffold | COMPLETE | Electron + tsc, zero-CSS HTML, `composition-root.ts` in `src/` |
 | 2. `shared/` | COMPLETE | `DomainError`, `Logger` (levels error/warn/info/debug), `AppConfig.create(userDataPath)` |
-| 3. `state` module | COMPLETE | `WorkspaceState`, `JsonStateRepository` (now pure fs, takes `stateFilePath` via constructor), `GetLastVault`/`SetLastVault` |
-| 4. `vault` module | PARTIAL | open/list/create/read/write ✅; **`ChokidarFileWatcher` ❌** |
-| 5. `editor` module | COMPLETE (single-doc) | `Document` (immutable, readonly fields), `OpenDocument`/`SaveDocument`/`SaveAsDocument`/`NewDocument`/`MarkDirty` |
-| 6. Renderer v1 | PARTIAL | textarea, save/open/saveas/new ✅; **tabs ❌, auto-reload ❌, recent files UI ❌** |
+| 3. `state` module | COMPLETE | `WorkspaceState`, `JsonStateRepository` (pure fs, takes `stateFilePath` via constructor), `GetLastVault`/`SetLastVault`/`GetOpenTabs`/`SetOpenTabs` |
+| 4. `vault` module | PARTIAL | open/list/create/read/write/findByNoteName/readAllNotes ✅; **`ChokidarFileWatcher` ❌** |
+| 5. `editor` module | COMPLETE (multi-doc) | `Document` (immutable readonly), `DocumentRepository` (8 multi-doc methods), `OpenDocument`/`Save`/`SaveAs`/`New`/`MarkDirty`/`Close`/`Switch`/`GetOpenDocuments`; tabs with persist+restore |
+| 6. Renderer v1 | PARTIAL | textarea, save/open/saveas/new, tabs ✅; **auto-reload ❌, recent files UI ❌** |
+| 7-8. `knowledge` module | COMPLETE | `WikiLink`/`Backlink`/`Tag`/`NoteRef`, `MarkdownRenderer` port, `MarkedMarkdownRenderer` (marked v12 extensions: `[[Name]]`→`<a data-wiki>`, `#tag`→`<a data-tag>`), `RenderMarkdown`/`ParseWikiLinks`/`FindBacklinks`/`FindNotesByTag`/`ResolveLink` (case-insensitive)/`CreateNoteFromLink`; live preview (150ms debounce), wiki-link click→resolve/create, tag click→alert, backlinks panel |
+| 9-10. `search` module | COMPLETE | `SearchResult`, `SearchNotes` (case-insensitive, content+name, regex-escaped query, snippet with `>>match<<` markers + ~40 char context, sorted by matchCount), `SearchIpcHandler`; renderer live search (200ms debounce), results clickable→openFile |
 | 11. File explorer | COMPLETE | tree with expand/collapse (`[*]`/`[-]`/`[+]`), folder selection, Create button with auto-increment |
 
 ### Architectural audit fixes (applied)
@@ -237,16 +239,15 @@ KollyMD/
 
 3. **macOS Gatekeeper blocks unsigned/revoked Electron binaries.** `package.json` `postinstall`: `node node_modules/electron/install.js && xattr -r -d com.apple.quarantine node_modules/electron/dist/Electron.app 2>/dev/null; codesign --force --deep --sign - node_modules/electron/dist/Electron.app 2>/dev/null; true`
 
-### Remaining work
+### Remaining work (QoL only — all core MVP features done)
 
-- **ChokidarFileWatcher** (vault) — auto-reload on disk changes
-- **Recent files** use cases + UI (state field exists, no use cases)
-- **Tabs** — multiple documents (extends editor module: multi-Document instead of single)
-- **`knowledge` module** — `[[wiki-links]]`, backlinks, tags, MD render via `marked` (in main), live preview in `#preview`
-- **`search` module** — full-text search
+- **ChokidarFileWatcher** (vault) — auto-reload on disk changes (update explorer tree + re-read open tabs when files change externally)
+- **Recent files** use cases (`AddRecentFile`/`GetRecentFiles`) + UI (state field `recentFiles` exists, no use cases yet)
 
 ### Next action
 
-Recommended: **`knowledge` module + live preview** — this is the core Obsidian-like functionality (wiki-links, backlinks, MD rendering). Large but highest-value step. Alternative: finish `vault` (ChokidarFileWatcher) + Recent files first for QoL completeness.
+All core MVP features (vault, editor with tabs, knowledge graph, search) are COMPLETE. Remaining work is QoL only:
+1. **ChokidarFileWatcher** — auto-reload on external file changes
+2. **Recent files** — use cases + UI
 
 Decision pending user confirmation.

@@ -16,6 +16,10 @@ const tabsList = document.getElementById('tabs-list') as HTMLUListElement
 const preview = document.getElementById('preview') as HTMLDivElement
 const previewStatus = document.getElementById('preview-status') as HTMLSpanElement
 const backlinksList = document.getElementById('backlinks') as HTMLUListElement
+const searchInput = document.getElementById('search') as HTMLInputElement
+const searchResults = document.getElementById('search-results') as HTMLUListElement
+const searchStatus = document.getElementById('search-status') as HTMLSpanElement
+const searchBtn = document.getElementById('search-btn') as HTMLButtonElement
 
 let vaultRootPath: string | null = null
 let selectedFolder: string | null = null
@@ -543,6 +547,69 @@ document.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key === 's') {
     e.preventDefault()
     doSave()
+  }
+})
+
+let searchTimer: ReturnType<typeof setTimeout> | null = null
+
+function scheduleSearch(): void {
+  if (searchTimer) clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => {
+    runSearch()
+  }, 200)
+}
+
+async function runSearch(): Promise<void> {
+  const query = searchInput.value.trim()
+  if (!query) {
+    searchResults.innerHTML = ''
+    searchStatus.textContent = ''
+    return
+  }
+  searchBtn.textContent = 'Searching...'
+  searchBtn.disabled = true
+  searchStatus.textContent = 'Searching...'
+  try {
+    const results = await window.api.search.searchNotes(query)
+    searchResults.innerHTML = ''
+    if (results.length === 0) {
+      searchStatus.textContent = 'No results'
+    } else {
+      searchStatus.textContent = results.length + ' results'
+      for (const r of results) {
+        const li = document.createElement('li')
+        const nameEl = document.createElement('strong')
+        nameEl.textContent = r.name + ' (' + r.matchCount + ')'
+        const snippetEl = document.createElement('div')
+        snippetEl.textContent = r.snippet
+        li.appendChild(nameEl)
+        li.appendChild(snippetEl)
+        li.addEventListener('click', () => {
+          openFile(r.path)
+        })
+        searchResults.appendChild(li)
+      }
+    }
+  } catch (e) {
+    searchStatus.textContent = '[Error: ' + (e as Error).message + ']'
+  } finally {
+    searchBtn.textContent = 'Search'
+    searchBtn.disabled = false
+  }
+}
+
+searchInput.addEventListener('input', () => {
+  scheduleSearch()
+})
+
+searchBtn.addEventListener('click', () => {
+  runSearch()
+})
+
+searchInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    runSearch()
   }
 })
 
