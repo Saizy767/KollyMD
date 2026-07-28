@@ -9,7 +9,7 @@
     "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.renderer.json --noEmit",
     "build:main": "tsc -p tsconfig.main.json",
     "build:renderer": "tsc -p tsconfig.renderer.json",
-    "build": "npm run build:main && npm run build:renderer && cp src/renderer/index.html dist/renderer/index.html",
+    "build": "npm run build:main && npm run build:renderer && cp src/renderer/index.html dist/renderer/index.html && cp src/renderer/styles.css dist/renderer/styles.css",
     "start": "npm run build && electron .",
     "dist": "npm run build && electron-builder"
   },

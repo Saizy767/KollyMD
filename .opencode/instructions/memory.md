@@ -63,6 +63,13 @@ All decisions MUST comply with `architecture.md` and `style.md`. Key resolutions
 | Loading state | Button text → "Loading..." + `disabled` attribute | style.md:26 |
 | Validation errors | Plain text next to field (e.g. `[Error: invalid format]`) | style.md:27 |
 | Live preview | Debounce ~150ms, re-render via `marked` on buffer change | UX decision |
+| CSS policy | Allowed in single file `src/renderer/styles.css` (no `<style>`, no inline, no frameworks) | user choice — relaxed from zero-CSS after MVP prototype |
+| Icons | Unicode symbols only (`×` `▸` `▾` `●` `⚑`); NO SVG/images/fonts | style.md |
+| Layout target | 3-column (sidebar \| editor \| preview), top bar vault+search | Obsidian-like |
+| Theme | Dark minimalist (dark bg, light text, one accent) | Obsidian-like |
+| UI libraries | BANNED (no Material/Radix/Headless, no Tailwind/Bootstrap) | style.md |
+| Renderer stack | Vanilla TS (no React/Vue/Svelte) — stays even after visual phase | user choice |
+| Native dialogs | Stays (alert/confirm/prompt) even after visual phase | user choice |
 
 ## 5. Module Structure (5 bounded contexts)
 
@@ -194,8 +201,9 @@ KollyMD/
 
 ## 10. Compliance Checklist (run before each commit)
 
-- No CSS file / `<style>` / `style=` anywhere
-- No SVG / PNG / icon / custom font
+- CSS only in `src/renderer/styles.css` — NO `<style>` tags, NO inline `style=`
+- No SVG / PNG / JPG / icon fonts / `@font-face` (Unicode symbols ARE allowed)
+- No UI component libraries or CSS frameworks (Tailwind, Bootstrap, Material, Radix, etc.)
 - No `import` of `fs`/`path`/`electron`/`marked`/`chokidar` in `domain/` or `application/`
 - No direct import into a module's internals (must go through `index.ts`)
 - All domain errors extend `DomainError` (no `throw new Error(...)` for domain problems)
@@ -239,15 +247,59 @@ KollyMD/
 
 3. **macOS Gatekeeper blocks unsigned/revoked Electron binaries.** `package.json` `postinstall`: `node node_modules/electron/install.js && xattr -r -d com.apple.quarantine node_modules/electron/dist/Electron.app 2>/dev/null; codesign --force --deep --sign - node_modules/electron/dist/Electron.app 2>/dev/null; true`
 
-### Remaining work (QoL only — all core MVP features done)
+### Remaining work — two-phase plan
 
-- **ChokidarFileWatcher** (vault) — auto-reload on disk changes (update explorer tree + re-read open tabs when files change externally)
-- **Recent files** use cases (`AddRecentFile`/`GetRecentFiles`) + UI (state field `recentFiles` exists, no use cases yet)
+All core MVP features (vault, editor with tabs, knowledge graph, search) are COMPLETE.
+The project now transitions from "dry prototype" to "usable product". The roadmap has
+two phases: **Phase A (QoL)** first, then **Phase B (Visual)**.
+
+#### Phase A — QoL (NEXT)
+
+**A1. ChokidarFileWatcher (vault)**
+- Domain: `WatchEvent` entity (`kind: 'add'|'change'|'unlink'|'rename'`, `path`, `oldPath?`); `FileWatcher` port (`start(root)`, `stop()`, `onChange(cb)`)
+- Infrastructure: `ChokidarFileWatcher` (chokidar, ignore dotfiles, persistent). Rename = unlink+add within ~300ms buffered window. Logging via existing `Logger`.
+- IPC: streaming push `event.reply('vault:note-changed', { kind, path, oldPath? })` — NO reqId (push, not request/response). Preload `api.vault.onNoteChanged(cb)`.
+- Composition root: start watcher on `OpenVault` + restore on startup; stop on vault switch.
+- Renderer behavior (decided):
+  - `add`/`unlink`/`rename` → `loadExplorer()` (refresh tree)
+  - `change` → if path is active tab → **auto-reload content** (overwrite textarea, NO confirm — unsaved changes lost per user decision)
+  - `unlink` → if tab open → close it
+  - `rename` → update `path` in `TabState` if open
+
+**A2. Recent files (state)**
+- Application (state): `AddRecentFile` (add to front, dedup, cap 10), `GetRecentFiles`
+- Integration: `EditorIpcHandler.open-document` calls `AddRecentFile.execute(path)` after success
+- New IPC channel `state:get-recent-files`
+- Renderer: `<button id="recent-btn">Recent</button>` in `#vault-bar`; click → `getRecentFiles()` → toggle `<ul id="recent-list">` (visible/hidden via `hidden` attr); click item → `openFile(path)` + hide list; empty state "No recent files"
+- Limit: 10 files (decided)
+
+**A3. Verification**: `typecheck` + `build` + smoke (external file change → tree+tab reload; Recent button shows list)
+
+#### Phase B — Visual (after A)
+
+**B1. style.md already relaxed** (done in this commit): CSS allowed in single `styles.css`, Unicode icons allowed, ban kept on SVG/fonts/UI-libraries/frameworks.
+
+**B2. CSS + Layout**
+- Create `src/renderer/styles.css` (single file)
+- 3-column layout (Obsidian-like):
+  ```
+  +----------------------------------------------------+
+  | Top bar: vault-bar | search-bar                    |
+  +----------+-----------------------+-----------------+
+  | Sidebar  | Tabs                  | Preview         |
+  | Explorer | +-------------------+ | (rendered MD)   |
+  | Create   | | Editor (textarea) | |                 |
+  | Refresh  | |                   | | Backlinks       |
+  | Recent   | +-------------------+ |                 |
+  | Tree     | doc-status           |                 |
+  +----------+-----------------------+-----------------+
+  ```
+- Dark minimalist theme (dark bg, light text, one accent color)
+- Unicode symbols as icons: `×` (close tab), `▸`/`▾` (folders), `●` (active), `⚑` (backlink)
+- System monospace for editor, system sans-serif for UI
+
+**B3. Update memory.md phase table + commit**
 
 ### Next action
 
-All core MVP features (vault, editor with tabs, knowledge graph, search) are COMPLETE. Remaining work is QoL only:
-1. **ChokidarFileWatcher** — auto-reload on external file changes
-2. **Recent files** — use cases + UI
-
-Decision pending user confirmation.
+**Phase A1 — ChokidarFileWatcher**. Implementation starts immediately (build mode active).

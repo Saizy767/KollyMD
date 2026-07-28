@@ -1,0 +1,345 @@
+/* KollyMD — single CSS surface. Dark minimalist (Obsidian-like). */
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+}
+
+body {
+  display: flex;
+  flex-direction: row;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  font-size: 14px;
+  overflow: hidden;
+}
+
+/* ---------- Sidebar ---------- */
+
+#sidebar {
+  width: 280px;
+  min-width: 280px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #252526;
+  border-right: 1px solid #333;
+  overflow: hidden;
+}
+
+#sidebar-header {
+  padding: 8px;
+  border-bottom: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#vault-path {
+  font-size: 12px;
+  color: #888;
+  word-break: break-all;
+  cursor: pointer;
+}
+
+#search-bar {
+  padding: 8px;
+  border-bottom: 1px solid #333;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+#search {
+  width: 100%;
+  padding: 6px 8px;
+  background: #1e1e1e;
+  border: 1px solid #3c3c3c;
+  border-radius: 4px;
+  color: #d4d4d4;
+  font-size: 13px;
+}
+
+#search:focus {
+  outline: none;
+  border-color: #0e639c;
+}
+
+#search-status {
+  font-size: 11px;
+  color: #888;
+}
+
+#explorer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 8px;
+  gap: 6px;
+}
+
+#explorer > button {
+  align-self: flex-start;
+}
+
+#explorer-tree {
+  flex: 1;
+  overflow: auto;
+  margin: 4px 0 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+#explorer-status {
+  font-size: 11px;
+  color: #888;
+  padding-top: 4px;
+}
+
+#search-results {
+  max-height: 40%;
+  overflow: auto;
+  margin: 0;
+  padding: 0 8px;
+  list-style: none;
+  border-top: 1px solid #333;
+}
+
+#search-results li {
+  padding: 6px 4px;
+  border-bottom: 1px solid #2d2d2d;
+  cursor: pointer;
+}
+
+#search-results li:hover {
+  background: #2a2d2e;
+}
+
+#search-results strong {
+  color: #d4d4d4;
+  font-size: 12px;
+}
+
+#search-results div {
+  color: #888;
+  font-size: 11px;
+  margin-top: 2px;
+  word-break: break-word;
+}
+
+/* ---------- Tree styling ---------- */
+
+#explorer-tree ul {
+  list-style: none;
+  margin: 0;
+  padding-left: 12px;
+}
+
+#explorer-tree li {
+  margin: 1px 0;
+}
+
+#explorer-tree button {
+  background: none;
+  border: none;
+  color: #d4d4d4;
+  cursor: pointer;
+  font: inherit;
+  padding: 2px 4px;
+  text-align: left;
+}
+
+#explorer-tree button:hover {
+  color: #fff;
+}
+
+#explorer-tree span {
+  cursor: pointer;
+  padding: 2px 4px;
+  display: inline-block;
+}
+
+#explorer-tree span:hover {
+  color: #fff;
+}
+
+/* ---------- Main area ---------- */
+
+#main {
+  flex: 1;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+#tabs {
+  background: #2d2d2d;
+  border-bottom: 1px solid #333;
+  padding: 0;
+  overflow-x: auto;
+}
+
+#tabs-list {
+  display: flex;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+#tabs-list li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  background: #252526;
+  border-right: 1px solid #333;
+  cursor: pointer;
+  font-size: 12px;
+  color: #888;
+}
+
+#tabs-list li[data-active="true"] {
+  background: #1e1e1e;
+  color: #fff;
+}
+
+#tabs-list li span {
+  white-space: nowrap;
+}
+
+#tabs-list li button {
+  background: none;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  font: inherit;
+  padding: 0 4px;
+}
+
+#tabs-list li button:hover {
+  color: #fff;
+}
+
+#editor-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  background: #252526;
+  border-bottom: 1px solid #333;
+}
+
+#doc-status {
+  font-size: 12px;
+  color: #888;
+  margin-left: 8px;
+}
+
+#editor {
+  flex: 1;
+  width: 100%;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border: none;
+  border-radius: 0;
+  padding: 12px;
+  font-family: "SF Mono", Menlo, Monaco, Consolas, monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  resize: none;
+  outline: none;
+}
+
+#preview {
+  padding: 12px;
+  overflow: auto;
+  max-height: 40%;
+  border-top: 1px solid #333;
+  background: #1e1e1e;
+}
+
+#preview a[data-wiki],
+#preview a[data-tag] {
+  color: #4daafc;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+#preview a[data-wiki]:hover,
+#preview a[data-tag]:hover {
+  text-decoration: underline;
+}
+
+#preview-status {
+  font-size: 11px;
+  color: #888;
+  padding: 4px 12px;
+}
+
+#backlinks {
+  list-style: none;
+  margin: 0;
+  padding: 8px 12px;
+  border-top: 1px solid #333;
+  max-height: 20%;
+  overflow: auto;
+}
+
+#backlinks li {
+  font-size: 12px;
+  color: #888;
+  padding: 2px 0;
+}
+
+#backlinks li span {
+  cursor: pointer;
+  color: #4daafc;
+}
+
+#backlinks li span:hover {
+  text-decoration: underline;
+}
+
+/* ---------- Buttons ---------- */
+
+button {
+  background: #0e639c;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+button:hover:not(:disabled) {
+  background: #1177bb;
+}
+
+button:disabled {
+  background: #3a3a3a;
+  color: #666;
+  cursor: not-allowed;
+}
+
+#explorer > button,
+#sidebar-header button {
+  background: #3a3a3a;
+}
+
+#explorer > button:hover:not(:disabled),
+#sidebar-header button:hover:not(:disabled) {
+  background: #4a4a4a;
+}
+
+#search-btn {
+  align-self: flex-start;
+}
