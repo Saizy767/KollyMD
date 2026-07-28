@@ -52,28 +52,49 @@ Use **throw/catch** with custom domain exceptions.
 - Use cases throw these errors; infrastructure catches them and translates to user-facing messages (via native Electron dialogs).
 - **Rule:** Never catch and silently swallow errors. Never use generic `Error` for domain problems — always use specific domain error types.
 
+## Build Pipeline
+
+The project uses a **split build system**:
+
+- **Main process** (`src/main/`, `src/modules/`, `src/shared/`, `src/composition-root.ts`): compiled by `tsc` to CommonJS (`dist/`). No bundler — these are Node.js modules loaded by Electron's main process.
+- **Renderer process** (`src/renderer/`): bundled by **Vite** to `dist/renderer/`. Vite resolves `@codemirror/*` and other npm imports, provides HMR in dev mode, and outputs a single bundled `renderer.js` + `styles.css` + `index.html`.
+- **Dev mode:** Vite dev server (`localhost:5173`) with HMR. Electron `main.ts` uses `loadURL('http://localhost:5173')` in dev, `loadFile('dist/renderer/index.html')` in production. Detection via `app.isPackaged` or `process.env.NODE_ENV`.
+- **Why Vite for renderer:** CodeMirror 6 and its ecosystem require ES module bundling. The old "no bundler" constraint (file:// ESM limitation) is lifted for the renderer only — main process stays on plain tsc.
+- **Renderer imports:** The renderer MAY import external npm packages (`@codemirror/*`, etc.) — they are bundled by Vite. This does NOT violate the domain/application purity rules, because the renderer is infrastructure-level code (presentation layer), not part of any module's domain or application layers.
+
 ## Physical Project Structure
-src/
-├── modules/
-│ ├── {feature-name}/
-│ │ ├── domain/
-│ │ │ ├── entities/
-│ │ │ ├── value-objects/
-│ │ │ ├── errors/
-│ │ │ └── interfaces/ // repository/service ports
-│ │ ├── application/
-│ │ │ ├── use-cases/
-│ │ │ └── dto/
-│ │ ├── infrastructure/
-│ │ │ ├── repositories/
-│ │ │ ├── ipc-handlers/
-│ │ │ └── external-services/
-│ │ └── index.ts // public contract
-├── shared/
-│ ├── domain/ // shared entities, base classes
-│ ├── application/ // shared use-cases, interfaces
-│ └── infrastructure/ // logger, config, utilities
-└── composition-root.ts // manual DI assembly
+```
+KollyMD/
+├── package.json
+├── vite.config.ts              # Vite config for renderer bundling
+├── tsconfig.json               # base config
+├── tsconfig.main.json          # CJS, node types, includes main/modules/shared
+├── tsconfig.renderer.json      # ESM, DOM lib, includes renderer only
+├── electron-builder.yml
+└── src/
+    ├── composition-root.ts     # manual DI assembly (compiled by tsc, NOT Vite)
+    ├── main/
+    │   ├── main.ts             # Electron entry, BrowserWindow
+    │   └── preload.ts          # contextBridge → window.api
+    ├── modules/
+    │   ├── vault/{domain,application,infrastructure}/ + index.ts
+    │   ├── editor/{...}/ + index.ts
+    │   ├── knowledge/{...}/ + index.ts
+    │   ├── search/{...}/ + index.ts
+    │   └── state/{...}/ + index.ts
+    ├── renderer/
+    │   ├── index.html          # bare semantic HTML, links styles.css
+    │   ├── renderer.ts         # Vite entry, wires CM6 + DOM events
+    │   ├── editor/             # CodeMirror 6 setup + Live Preview decorations
+    │   │   ├── cm-setup.ts     # EditorState + EditorView configuration
+    │   │   ├── live-preview.ts # ViewPlugin with Decoration.replace() + WidgetType
+    │   │   └── wiki-decorations.ts  # [[wiki-link]] and #tag inline decorations
+    │   ├── styles.css          # single CSS surface (dark minimalist)
+    │   └── env.d.ts            # ambient type declarations
+    └── shared/
+        ├── domain/errors/      # DomainError base + specific errors
+        └── infrastructure/     # Logger, AppConfig
+```
 
 ## What the AI Must NOT Do (Anti-patterns)
 

@@ -8,19 +8,21 @@ agreed with the user. Update it whenever a decision changes.
 
 **KollyMD** is an Obsidian/Logseq-like local knowledge base built on Electron + TypeScript.
 Page-based paradigm (one note = one document, NOT a block-based outliner).
-The goal is dry, working functionality — UI polish is explicitly out of scope (see `style.md`).
+The goal is functional correctness with a clean dark-minimalist presentation. The editor
+uses CodeMirror 6 Live Preview (WYSIWYG inline rendering with raw-syntax reveal on cursor).
 
 ## 2. Tech Stack (Decided)
 
 - **Runtime:** Electron
 - **Language:** TypeScript (strict)
-- **Renderer:** Vanilla TS, no framework (no React/Vue/Svelte)
-- **Bundler:** None — tsc compiles, renderer uses native ESM (`<script type="module">`)
+- **Renderer:** Vanilla TS (no React/Vue/Svelte), but uses external npm imports (`@codemirror/*`) bundled by Vite
+- **Bundler:** **Vite** for renderer (ESM bundling, HMR in dev). Main process stays on `tsc` (CommonJS). No bundler for main/modules/shared.
 - **Packager:** electron-builder
-- **Markdown parser:** `marked` (runs in MAIN process, `knowledge` module infrastructure — NOT in renderer; browser context cannot resolve bare `node_modules` imports without a bundler, which is forbidden)
-- **File watcher:** `chokidar` (cross-platform, reliable)
+- **Editor:** **CodeMirror 6** (`codemirror`, `@codemirror/state`, `@codemirror/view`, `@codemirror/lang-markdown`, `@lezer/highlight`) — Live Preview via custom `Decoration.replace()` + `WidgetType` ViewPlugin
+- **Markdown rendering:** **CodeMirror 6 decorations** (inline WYSIWYG). `marked` is being REMOVED — the old `knowledge:render` IPC + `MarkedMarkdownRenderer` are deprecated and will be deleted during Phase B2d.
+- **File watcher:** `chokidar` (cross-platform, reliable) — not yet implemented (Phase A1)
 - **State storage:** JSON file in `app.getPath('userData')`
-- **Renderer:** pure TS, zero external imports — only DOM + `window.api` (preload IPC). All parsing/rendering happens in main.
+- **Renderer imports:** The renderer MAY import `@codemirror/*` (bundled by Vite). It does NOT import `marked` (deprecated) or `chokidar` (main-only).
 
 ## 3. MVP Scope
 
@@ -62,13 +64,18 @@ All decisions MUST comply with `architecture.md` and `style.md`. Key resolutions
 | Close tab button | Text `<button>Close</button>` (no SVG/icon) | style.md:15 |
 | Loading state | Button text → "Loading..." + `disabled` attribute | style.md:26 |
 | Validation errors | Plain text next to field (e.g. `[Error: invalid format]`) | style.md:27 |
-| Live preview | Debounce ~150ms, re-render via `marked` on buffer change | UX decision |
+| Live preview | CodeMirror 6 Live Preview — `Decoration.replace()` + `WidgetType`, cursor-on-line reveals raw syntax | user choice (Obsidian-like) |
+| Editor surface | `<div id="editor-host">` + CM6 `EditorView` (NOT textarea). No separate `#preview` div. | user choice |
+| Bundler | **Vite** for renderer (HMR + ESM bundling). Main process stays on `tsc` (CJS). | user choice — relaxed from "no bundler" for CM6 |
+| Markdown rendering | **CM6 decorations** (inline WYSIWYG). `marked` + `MarkedMarkdownRenderer` + `knowledge:render` IPC → REMOVED in Phase B2d. | replaces marked-based preview |
+| Wiki-links in editor | CM6 inline clickable decorations (`<a data-wiki>`), always clickable regardless of cursor | user choice |
+| Tags in editor | CM6 inline clickable decorations (`<a data-tag>`), always clickable | consistent with wiki-links |
 | CSS policy | Allowed in single file `src/renderer/styles.css` (no `<style>`, no inline, no frameworks) | user choice — relaxed from zero-CSS after MVP prototype |
 | Icons | Unicode symbols only (`×` `▸` `▾` `●` `⚑`); NO SVG/images/fonts | style.md |
-| Layout target | 3-column (sidebar \| editor \| preview), top bar vault+search | Obsidian-like |
+| Layout target | 2-column (sidebar | editor). No separate preview pane — CM6 IS the preview. | changed from 3-column after CM6 decision |
 | Theme | Dark minimalist (dark bg, light text, one accent) | Obsidian-like |
 | UI libraries | BANNED (no Material/Radix/Headless, no Tailwind/Bootstrap) | style.md |
-| Renderer stack | Vanilla TS (no React/Vue/Svelte) — stays even after visual phase | user choice |
+| Renderer stack | Vanilla TS (no React/Vue/Svelte) — stays. CM6 is a library, not a framework. | user choice |
 | Native dialogs | Stays (alert/confirm/prompt) even after visual phase | user choice |
 
 ## 5. Module Structure (5 bounded contexts)
@@ -91,9 +98,9 @@ Each module = `domain/` → `application/` → `infrastructure/` + `index.ts` (s
 ### 5.3 `knowledge` — link graph
 - **Domain:** `WikiLink` (targetName), `Backlink` (sourceNoteId, targetNoteId), `Tag` (name), `NoteRef`
 - **Application:** `ParseWikiLinks`, `FindBacklinks` (on-demand scan via `NoteRepository`),
-  `FindNotesByTag`, `CreateNoteFromLink`
-- **Infrastructure:** `MarkedWikiLinkPlugin` (marked extension rendering `[[...]]` → `<a data-wiki="Name">`),
-  `KnowledgeIpcHandler`
+  `FindNotesByTag`, `ResolveLink`, `CreateNoteFromLink`
+- **Infrastructure:** `KnowledgeIpcHandler`
+- **Migration note:** `MarkedMarkdownRenderer` + `RenderMarkdown` use case + `knowledge:render` IPC channel are **deprecated** — will be REMOVED in Phase B2d once CM6 Live Preview replaces the old `#preview` div. `marked` dependency removed at that point.
 - **Depends on:** `vault`
 
 ### 5.4 `search` — full-text search
@@ -123,88 +130,166 @@ The preload layer generates `reqId`, sends, and resolves a Promise on the matchi
 ### Channels
 - `vault:open-vault`, `vault:open-file`, `vault:list-notes`, `vault:read-note`,
   `vault:write-note`, `vault:create-note`
-- `vault:note-changed` (streaming, no reqId — main pushes on watcher events)
-- `editor:new`, `editor:save`, `editor:save-as`
-- `knowledge:render`, `knowledge:parse-links`, `knowledge:find-backlinks`, `knowledge:find-by-tag`,
+- `vault:note-changed` (streaming, no reqId — main pushes on watcher events) — Phase A1
+- `editor:new`, `editor:save`, `editor:save-as`, `editor:close-document`, `editor:switch-document`,
+  `editor:get-open-documents`, `editor:mark-dirty`, `editor:get-open-tabs`
+- `knowledge:find-backlinks`, `knowledge:find-notes-by-tag`,
   `knowledge:resolve-link`, `knowledge:create-note-from-link`
+- `knowledge:render` — **DEPRECATED**, removed in Phase B2d
 - `search:search-notes`
-- `state:load`, `state:save`, `state:add-recent`, `state:update-open-tabs`
+- `state:load`, `state:save`, `state:get-recent-files` — Phase A2
 
 ### Error handling in IPC handlers
 1. Catch domain error from use case
 2. Show via `dialog.showMessageBox` (main process)
 3. Reply to renderer with `{ reqId, error: true }` (no error text leaked to renderer UI)
 
-## 7. Renderer Layout (vanilla TS, native ESM, zero CSS)
+## 7. Renderer Layout (vanilla TS + Vite + CodeMirror 6)
 
-`src/renderer/index.html` — bare semantic skeleton:
+`src/renderer/index.html` — semantic skeleton, links `styles.css`:
 ```
-<div id="tabs"><ul></ul></div>
-<aside id="explorer"><ul></ul></aside>
-<textarea id="editor"></textarea>
-<div id="preview"></div>
-<input id="search"><ul id="search-results"></ul>
-<ul id="backlinks"></ul>
+<aside id="sidebar"> vault-bar + search-bar + explorer + search-results </aside>
+<main id="main"> tabs + editor-bar + <div id="editor-host"> + backlinks </main>
 ```
 
-`src/renderer/renderer.ts` — entry (`type="module"`).
-Regions: `tabs.ts`, `explorer.ts`, `editor.ts`, `preview.ts`, `search.ts`, `backlinks.ts`.
+**NOT a `<textarea>`** — `#editor-host` is a container for CodeMirror 6 `EditorView`.
 
-- Renderer is pure DOM + IPC. NO external imports (no `marked` in renderer).
-- To render preview: send raw MD via `knowledge:render` IPC → main returns HTML (with wiki-link plugin applied) → inject into `#preview` via `innerHTML`. Debounce ~150ms.
-- Wiki-link clicks (`<a data-wiki="Name">`) → `knowledge:resolve-link` → if null, `confirm("Create note 'Name'?")` → `create-note-from-link`.
+`src/renderer/renderer.ts` — Vite entry (ESM, bundled). Wires CM6 + DOM events.
+
+`src/renderer/editor/` — CM6 modules:
+- `cm-setup.ts` — `EditorState.create()` + `EditorView` config (markdown lang, dark theme, line wrapping, updateListener for dirty tracking)
+- `live-preview.ts` — `ViewPlugin.fromClass()` with `buildDecorations(view)`: walks Lezer markdown tree, applies `Decoration.replace()` + `WidgetType` for heading/bold/italic/code/link/list/quote/hr. Cursor-on-line → skip decoration (raw syntax visible).
+- `wiki-decorations.ts` — separate `ViewPlugin`: regex scan for `[[Name]]` and `#tag`, `Decoration.replace()` with clickable `<a data-wiki>` / `<a data-tag>` widgets. Always active (not cursor-dependent).
+
+**No `#preview` div.** The old `marked`-based preview pipeline (`renderPreview()`, `schedulePreview()`, `knowledge:render` IPC) is removed in Phase B2d.
+
+- Wiki-link clicks (`a[data-wiki]`) → DOM event delegation on `#editor-host` → `knowledge:resolve-link` → if null, `confirm("Create note 'Name'?")` → `create-note-from-link`.
+- Tag clicks (`a[data-tag]`) → `knowledge:find-notes-by-tag` → `alert` with note list.
 - Active tab: `li[data-active="true"]`.
-- Close tab: `<button>Close</button>`.
+- Close tab: `<button>×</button>` (Unicode, not SVG).
+- Tab switching: CM6 content → `view.state.doc.toString()` saved to `TabState.content`; load → `view.dispatch({ changes: { from: 0, to, insert: newContent } })`.
+- Save: read content from `view.state.doc.toString()`.
 
 ## 8. Physical Project Structure
 
 ```
 KollyMD/
 ├── package.json
+├── vite.config.ts              # Vite config for renderer bundling
 ├── tsconfig.json / tsconfig.main.json / tsconfig.renderer.json
 ├── electron-builder.yml
-├── src/
-│   ├── composition-root.ts
-│   ├── main/
-│   │   ├── main.ts
-│   │   └── preload.ts
-│   ├── modules/
-│   │   ├── vault/{domain,application,infrastructure}/ + index.ts
-│   │   ├── editor/{...}/ + index.ts
-│   │   ├── knowledge/{...}/ + index.ts
-│   │   ├── search/{...}/ + index.ts
-│   │   └── state/{...}/ + index.ts
-│   ├── renderer/
-│   │   ├── index.html
-│   │   ├── renderer.ts
-│   │   └── regions/{tabs,explorer,editor,preview,search,backlinks}.ts
-│   └── shared/
-│       ├── domain/errors/
-│       └── infrastructure/{Logger,AppConfig}.ts
+└── src/
+    ├── composition-root.ts     # manual DI assembly (compiled by tsc, NOT Vite)
+    ├── main/
+    │   ├── main.ts             # Electron entry, BrowserWindow
+    │   └── preload.ts          # contextBridge → window.api
+    ├── modules/
+    │   ├── vault/{domain,application,infrastructure}/ + index.ts
+    │   ├── editor/{...}/ + index.ts
+    │   ├── knowledge/{...}/ + index.ts
+    │   ├── search/{...}/ + index.ts
+    │   └── state/{...}/ + index.ts
+    ├── renderer/
+    │   ├── index.html          # semantic HTML, links styles.css
+    │   ├── renderer.ts         # Vite entry, wires CM6 + DOM events
+    │   ├── editor/             # CodeMirror 6 setup + Live Preview decorations
+    │   │   ├── cm-setup.ts     # EditorState + EditorView configuration
+    │   │   ├── live-preview.ts # ViewPlugin with Decoration.replace() + WidgetType
+    │   │   └── wiki-decorations.ts  # [[wiki-link]] and #tag inline decorations
+    │   ├── styles.css          # single CSS surface (dark minimalist)
+    │   └── env.d.ts            # ambient type declarations
+    └── shared/
+        ├── domain/errors/      # DomainError base + specific errors
+        └── infrastructure/     # Logger, AppConfig
 ```
 
 ## 9. Implementation Phases
 
-1. **Scaffold:** `package.json`, `tsconfig.*`, `electron-builder.yml`, `src/main/main.ts`,
-   `preload.ts` (contextBridge skeleton), empty `index.html`, `composition-root.ts`
+### Completed (Phases 1-11)
+1. **Scaffold:** `package.json`, `tsconfig.*`, `electron-builder.yml`, `src/main/main.ts`, `preload.ts`, `composition-root.ts`
 2. **`shared/`:** `DomainError`, `Logger`, `AppConfig`
-3. **`state` module** (full) + IPC + JSON repository
-4. **`vault` module** (full): domain → application → `FsNoteRepository` + `ChokidarFileWatcher` + IPC
-5. **`editor` module** + IPC
-6. **Renderer v1:** tabs (`data-active`), textarea, Save/Open/SaveAs, auto-reload, recent files
-7. **`knowledge` module** + `MarkedWikiLinkPlugin` + IPC (resolve/backlinks/tags/create-from-link)
-8. **Renderer v2:** wiki-link clicks (via `confirm`), backlinks panel, tags
-9. **`search` module** + IPC
-10. **Renderer v3:** search box + results
-11. **Renderer v4:** file explorer (plain `<ul>`/`<li>`)
-12. **Final:** `tsc --noEmit` across all three tsconfigs, `npm run build`, smoke test
+3. **`state` module** + IPC + JSON repository
+4. **`vault` module** (partial): domain → application → `FsNoteRepository` + IPC (ChokidarFileWatcher pending)
+5. **`editor` module** + IPC (multi-doc tabs, persist+restore)
+6. **Renderer v1:** tabs, save/open/saveas/new
+7-8. **`knowledge` module:** wiki-links, backlinks, tags, live preview (marked-based, to be replaced)
+9-10. **`search` module** + IPC + renderer live search
+11. **File explorer** + Create button + sidebar layout + `styles.css` (dark minimalist)
+
+### Phase A — QoL (NEXT, before visual)
+
+**A1. ChokidarFileWatcher (vault)** — auto-reload on disk changes
+**A2. Recent files (state)** — use cases + UI (button + toggle list, limit 10)
+**A3. Verification + commit**
+
+### Phase B — Visual: CodeMirror 6 Live Preview (decomposed)
+
+**B2a. Vite migration + CM6 basic setup**
+- Install: `vite`, `@codemirror/state`, `@codemirror/view`, `@codemirror/commands`, `@codemirror/language`, `@codemirror/lang-markdown`, `@lezer/highlight`
+- `vite.config.ts` — renderer bundling, dev server `localhost:5173`, output `dist/renderer/`
+- `package.json` scripts: `dev` (vite dev + electron), `build` (tsc main + vite build renderer)
+- `main.ts`: dev → `loadURL('http://localhost:5173')`, prod → `loadFile('dist/renderer/index.html')`
+- `src/renderer/editor/cm-setup.ts`: `EditorState.create()` + `EditorView` (markdown lang, dark theme, line wrapping, `updateListener` for dirty tracking)
+- Replace `<textarea id="editor">` with `<div id="editor-host">` + CM6 instance
+- Integrate with existing: open/save/tabs — content via `view.state.doc.toString()` / `view.dispatch()`
+- `styles.css`: CM6 dark theme (`.cm-editor`, `.cm-content`)
+- **Checkpoint:** CM6 works, markdown syntax highlighting, save/open/tabs functional. No WYSIWYG yet.
+
+**B2b. Live Preview decorations (WYSIWYG)**
+- `src/renderer/editor/live-preview.ts`: `ViewPlugin.fromClass()` with `buildDecorations(view)`
+- Walk Lezer markdown tree (from `@codemirror/lang-markdown` syntax tree)
+- For each node type → `Decoration.replace()` + custom `WidgetType`:
+  - Heading → `<h1>`-`<h6>` (font-size scaling)
+  - StrongEmphasis → `<strong>` styling
+  - Emphasis → `<em>` styling
+  - InlineCode → monospace
+  - Link → styled `<a>`
+  - FencedCode → `<pre><code>` block
+  - BulletList/OrderedList → list styling
+  - Blockquote → `<blockquote>` styling
+  - HR → `<hr>`
+- **Cursor reveal logic:** if selection (cursor) intersects the node's line range → skip decoration (raw syntax visible); otherwise apply `Decoration.replace()` with widget
+- `DecorationSet` updated on `docChanged`, `selectionSet`, `viewportChanged`
+- `styles.css`: widget styles (`.cm-header`, `.cm-bold`, etc.)
+- **Checkpoint:** markdown renders inline, cursor on line reveals raw syntax.
+
+**B2c. Wiki-link/tag inline decorations**
+- `src/renderer/editor/wiki-decorations.ts`: separate `ViewPlugin`
+- Regex scan for `[[Name]]` and `#tag` (on each viewport update)
+- `Decoration.replace()` with `WidgetType`:
+  - Wiki-link → `<a data-wiki="Name" class="cm-wikilink">Name</a>`
+  - Tag → `<a data-tag="name" class="cm-tag">#name</a>`
+- Always active (not cursor-dependent) — wiki-links/tags always clickable
+- DOM event delegation on `#editor-host`: click `a[data-wiki]` → `handleWikiLinkClick` (existing); click `a[data-tag]` → `handleTagClick` (existing)
+- `styles.css`: `.cm-wikilink`, `.cm-tag` accent color styling
+- **Checkpoint:** `[[Name]]` and `#tag` clickable directly in editor.
+
+**B2d. Integration + cleanup**
+- Remove `<div id="preview">`, `<span id="preview-status">` from HTML
+- Remove `renderPreview()`, `schedulePreview()` from renderer
+- Remove `MarkedMarkdownRenderer`, `RenderMarkdown` use case from knowledge module
+- Remove `knowledge:render` IPC channel + handler + preload method
+- Remove `marked` from dependencies
+- Update `env.d.ts`: remove preview-related types, remove `knowledge.render`
+- Update `styles.css`: remove `#preview` styles, add CM6 as primary editor surface
+- Verify: backlinks panel still works (separate from editor), save/open/tabs work with CM6
+- **Checkpoint:** single unified editor surface, no preview pane, clean codebase.
+
+**B2e. Update memory.md + style.md + architecture.md**
+- Finalize phase table, update compliance checklist, commit
+
+### Phase B3 — Layout polish (after B2)
+- Fine-tune `styles.css`: sidebar, tabs, editor, backlinks proportions
+- Unicode icons throughout: `×` (close tab), `▸`/`▾` (folders), `●` (active), `⚑` (backlink)
+- Responsive considerations (min widths, overflow)
 
 ## 10. Compliance Checklist (run before each commit)
 
 - CSS only in `src/renderer/styles.css` — NO `<style>` tags, NO inline `style=`
 - No SVG / PNG / JPG / icon fonts / `@font-face` (Unicode symbols ARE allowed)
 - No UI component libraries or CSS frameworks (Tailwind, Bootstrap, Material, Radix, etc.)
-- No `import` of `fs`/`path`/`electron`/`marked`/`chokidar` in `domain/` or `application/`
+- No `import` of `fs`/`path`/`electron`/`chokidar` in `domain/` or `application/` (renderer MAY import `@codemirror/*` — bundled by Vite)
+- `marked` is deprecated — do not add new `marked` usage. Remove existing usage during Phase B2d.
 - No direct import into a module's internals (must go through `index.ts`)
 - All domain errors extend `DomainError` (no `throw new Error(...)` for domain problems)
 - All user-facing errors via `dialog` (main) or `alert`/`confirm`/`prompt` (renderer)
@@ -212,6 +297,7 @@ KollyMD/
 - No DI container / no decorators for injection
 - Each module exposes exactly one `index.ts`
 - `composition-root.ts` is in `src/`, not `src/main/`
+- Main process: `tsc` (CJS). Renderer: `vite build` (ESM bundled). Do not mix.
 
 ## 11. Current Status
 
@@ -239,67 +325,42 @@ KollyMD/
 3. **`Document` fields `readonly`** — `path` and `dirty` are now immutable; `InMemoryDocumentRepository` already used immutable re-creation pattern
 4. **`AppConfig`** — `JsonStateRepository` no longer imports `electron`; `app.getPath('userData')` moved to `composition-root.ts`. State file path unchanged (existing user data preserved).
 
-### Architectural corrections applied during scaffold (still valid)
+### Architectural corrections applied during scaffold (historical — some superseded)
 
-1. **`marked` runs in MAIN process** (`knowledge` module infrastructure) — NOT in renderer; browser context cannot resolve bare `node_modules` imports without a bundler (forbidden). `knowledge:render` IPC channel reserved for MD->HTML rendering.
+1. **`marked` was moved to MAIN process** (historical). NOW DEPRECATED — Phase B2d removes `marked` entirely, replacing it with CM6 Live Preview decorations in the renderer (bundled by Vite).
 
-2. **ESM in renderer is FORBIDDEN.** `<script type="module">` does NOT work with `file://` protocol (Chromium blocks ESM via CORS on `file://`). Use plain `<script src="...">`. `tsconfig.renderer.json` emits CommonJS (`module: CommonJS` inherited from base) — no `export {}` in output. `env.d.ts` uses ambient declarations (no `export`/`import`).
+2. **ESM in renderer was FORBIDDEN** (historical, `file://` CORS limitation). NOW SUPERSEDED — Vite bundles the renderer into a single JS file, loaded via `<script>` (no `file://` ESM issue). `tsconfig.renderer.json` will switch to ESM (`module: ES2020`) during Phase B2a.
 
 3. **macOS Gatekeeper blocks unsigned/revoked Electron binaries.** `package.json` `postinstall`: `node node_modules/electron/install.js && xattr -r -d com.apple.quarantine node_modules/electron/dist/Electron.app 2>/dev/null; codesign --force --deep --sign - node_modules/electron/dist/Electron.app 2>/dev/null; true`
 
-### Remaining work — two-phase plan
+### Remaining work — decomposed roadmap
 
 All core MVP features (vault, editor with tabs, knowledge graph, search) are COMPLETE.
-The project now transitions from "dry prototype" to "usable product". The roadmap has
-two phases: **Phase A (QoL)** first, then **Phase B (Visual)**.
+Sidebar layout + dark minimalist CSS are DONE. The project now transitions to
+**CodeMirror 6 Live Preview** as the unified editor surface.
 
-#### Phase A — QoL (NEXT)
+#### Phase A — QoL (NEXT, before CM6 migration)
 
-**A1. ChokidarFileWatcher (vault)**
-- Domain: `WatchEvent` entity (`kind: 'add'|'change'|'unlink'|'rename'`, `path`, `oldPath?`); `FileWatcher` port (`start(root)`, `stop()`, `onChange(cb)`)
-- Infrastructure: `ChokidarFileWatcher` (chokidar, ignore dotfiles, persistent). Rename = unlink+add within ~300ms buffered window. Logging via existing `Logger`.
-- IPC: streaming push `event.reply('vault:note-changed', { kind, path, oldPath? })` — NO reqId (push, not request/response). Preload `api.vault.onNoteChanged(cb)`.
-- Composition root: start watcher on `OpenVault` + restore on startup; stop on vault switch.
-- Renderer behavior (decided):
-  - `add`/`unlink`/`rename` → `loadExplorer()` (refresh tree)
-  - `change` → if path is active tab → **auto-reload content** (overwrite textarea, NO confirm — unsaved changes lost per user decision)
-  - `unlink` → if tab open → close it
-  - `rename` → update `path` in `TabState` if open
+| Task | Status | Details |
+|---|---|---|
+| A1. ChokidarFileWatcher | TODO | `WatchEvent` entity, `FileWatcher` port, `ChokidarFileWatcher` impl; streaming IPC `vault:note-changed`; renderer: refresh tree on add/unlink/rename, auto-reload active tab on change, close tab on unlink |
+| A2. Recent files | TODO | `AddRecentFile`/`GetRecentFiles` use cases (cap 10, dedup); `<button id="recent-btn">` + toggle `<ul>` in sidebar; `open-document` calls `AddRecentFile` |
+| A3. Verification | TODO | typecheck + build + smoke test |
 
-**A2. Recent files (state)**
-- Application (state): `AddRecentFile` (add to front, dedup, cap 10), `GetRecentFiles`
-- Integration: `EditorIpcHandler.open-document` calls `AddRecentFile.execute(path)` after success
-- New IPC channel `state:get-recent-files`
-- Renderer: `<button id="recent-btn">Recent</button>` in `#vault-bar`; click → `getRecentFiles()` → toggle `<ul id="recent-list">` (visible/hidden via `hidden` attr); click item → `openFile(path)` + hide list; empty state "No recent files"
-- Limit: 10 files (decided)
+#### Phase B — CodeMirror 6 Live Preview (after Phase A)
 
-**A3. Verification**: `typecheck` + `build` + smoke (external file change → tree+tab reload; Recent button shows list)
+| Task | Status | Details |
+|---|---|---|
+| B2a. Vite migration + CM6 basic | TODO | Install Vite + `@codemirror/*`; `vite.config.ts`; `dev`/`build` scripts; `main.ts` dev/prod URL switching; `editor/cm-setup.ts`; replace textarea with `#editor-host` + CM6; integrate open/save/tabs; CM6 dark theme in styles.css |
+| B2b. Live Preview decorations | TODO | `editor/live-preview.ts` ViewPlugin; Lezer tree walk; `Decoration.replace()` + `WidgetType` for heading/bold/italic/code/link/list/quote/hr; cursor-on-line reveals raw syntax |
+| B2c. Wiki-link/tag decorations | TODO | `editor/wiki-decorations.ts` ViewPlugin; regex `[[Name]]` + `#tag`; clickable `<a data-wiki>`/`<a data-tag>` widgets; DOM event delegation → existing handlers |
+| B2d. Integration + cleanup | TODO | Remove `#preview` div + `preview-status`; remove `renderPreview`/`schedulePreview`; remove `MarkedMarkdownRenderer`/`RenderMarkdown`/`knowledge:render` IPC; remove `marked` dependency; update env.d.ts + styles.css |
+| B2e. Docs update | TODO | Finalize memory.md phase table, update compliance checklist, commit |
 
-#### Phase B — Visual (after A)
-
-**B1. style.md already relaxed** (done in this commit): CSS allowed in single `styles.css`, Unicode icons allowed, ban kept on SVG/fonts/UI-libraries/frameworks.
-
-**B2. CSS + Layout**
-- Create `src/renderer/styles.css` (single file)
-- 3-column layout (Obsidian-like):
-  ```
-  +----------------------------------------------------+
-  | Top bar: vault-bar | search-bar                    |
-  +----------+-----------------------+-----------------+
-  | Sidebar  | Tabs                  | Preview         |
-  | Explorer | +-------------------+ | (rendered MD)   |
-  | Create   | | Editor (textarea) | |                 |
-  | Refresh  | |                   | | Backlinks       |
-  | Recent   | +-------------------+ |                 |
-  | Tree     | doc-status           |                 |
-  +----------+-----------------------+-----------------+
-  ```
-- Dark minimalist theme (dark bg, light text, one accent color)
-- Unicode symbols as icons: `×` (close tab), `▸`/`▾` (folders), `●` (active), `⚑` (backlink)
-- System monospace for editor, system sans-serif for UI
-
-**B3. Update memory.md phase table + commit**
+#### Phase B3 — Layout polish (after B2)
+- Fine-tune styles.css proportions, Unicode icons throughout, responsive min-widths
 
 ### Next action
 
-**Phase A1 — ChokidarFileWatcher**. Implementation starts immediately (build mode active).
+**Phase A1 — ChokidarFileWatcher**. Then A2 (Recent files). Then Phase B2a (Vite + CM6 basic).
+Decision pending user confirmation to start.

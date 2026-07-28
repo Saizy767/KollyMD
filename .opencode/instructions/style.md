@@ -32,8 +32,16 @@ System and form states are shown with text plus the basic `disabled`/`hidden` at
 
 ## Target Aesthetic
 - **Theme:** Dark minimalist (Obsidian-like). Dark background, light text, one accent color.
-- **Layout:** 3-column (sidebar | editor | preview). Top bar holds vault controls and search.
-- **Typography:** System monospace for editor, system sans-serif for UI. No custom fonts loaded.
+- **Layout:** 2-column (sidebar | editor). Sidebar holds vault controls, search, and file tree. Editor is a single unified surface (CodeMirror 6 Live Preview) — no separate preview pane.
+- **Typography:** System sans-serif for UI. Editor uses CodeMirror 6 with system monospace fallback; no custom fonts loaded.
+
+## 5. Editor Surface — CodeMirror 6 Live Preview
+- The editor is a **single unified surface** built on CodeMirror 6 (`<div id="editor-host">`, NOT a `<textarea>`).
+- **Live Preview mode:** markdown is rendered inline via CM6 decorations (`Decoration.replace()` + `WidgetType`). When the text cursor is on a line, that line reveals raw markdown syntax; all other lines show rendered output. This mirrors Obsidian's Live Preview.
+- `[[wiki-links]]` and `#tags` are rendered as **inline clickable decorations** (`<a data-wiki>` / `<a data-tag>`) directly in the editor — always clickable, regardless of cursor position.
+- There is **no separate preview pane**. The old `#preview` div and the `marked`-based rendering pipeline are removed.
+- CM6 is bundled via Vite (see `architecture.md` Build Pipeline). The renderer is no longer "zero external imports" — it imports `@codemirror/*` packages, bundled by Vite.
+- Styling for CM6 (`.cm-editor`, `.cm-content`, widget classes) lives in `src/renderer/styles.css` alongside the rest of the UI.
 
 ## What the AI Must NOT Do (Anti-patterns)
 - Add a second CSS file or split styles across files — everything lives in `src/renderer/styles.css`.
