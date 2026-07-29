@@ -1,5 +1,8 @@
 /// <reference path="./env.d.ts" />
 
+import { createEditorView } from './editor/cm-setup'
+import type { EditorView } from '@codemirror/view'
+
 const selectDirBtn = document.getElementById('select-dir') as HTMLButtonElement
 const vaultPathEl = document.getElementById('vault-path') as HTMLSpanElement
 const refreshBtn = document.getElementById('refresh-explorer') as HTMLButtonElement
@@ -11,10 +14,8 @@ const newDocBtn = document.getElementById('new-doc') as HTMLButtonElement
 const saveDocBtn = document.getElementById('save-doc') as HTMLButtonElement
 const saveAsDocBtn = document.getElementById('save-as-doc') as HTMLButtonElement
 const docStatus = document.getElementById('doc-status') as HTMLSpanElement
-const editor = document.getElementById('editor') as HTMLTextAreaElement
+const editorHost = document.getElementById('editor-host') as HTMLDivElement
 const tabsList = document.getElementById('tabs-list') as HTMLUListElement
-const preview = document.getElementById('preview') as HTMLDivElement
-const previewStatus = document.getElementById('preview-status') as HTMLSpanElement
 const backlinksList = document.getElementById('backlinks') as HTMLUListElement
 const searchInput = document.getElementById('search') as HTMLInputElement
 const searchResults = document.getElementById('search-results') as HTMLUListElement
@@ -31,6 +32,28 @@ interface TabState {
 }
 const tabs = new Map<string, TabState>()
 let activeDocId: string | null = null
+
+let editorView!: EditorView
+let suppressChange = false
+
+function getEditorContent(): string {
+  return editorView.state.doc.toString()
+}
+
+function setEditorContent(content: string): void {
+  suppressChange = true
+  editorView.dispatch({ changes: { from: 0, to: editorView.state.doc.length, insert: content } })
+  suppressChange = false
+}
+
+function onEditorContentChange(doc: string): void {
+  if (suppressChange) return
+  const tab = activeTab()
+  if (tab) {
+    tab.content = doc
+    if (!tab.dirty) setDirty(true)
+  }
+}
 
 function updateSelectedFolderDisplay(): void {
   if (selectedFolder) {
@@ -100,9 +123,9 @@ function renderTabs(): void {
 function loadActiveBuffer(): void {
   const tab = activeTab()
   if (tab) {
-    editor.value = tab.content
+    setEditorContent(tab.content)
   } else {
-    editor.value = ''
+    setEditorContent('')
   }
 }
 
@@ -110,7 +133,7 @@ async function switchToDoc(docId: string): Promise<void> {
   if (activeDocId === docId) return
   if (activeDocId) {
     const cur = tabs.get(activeDocId)
-    if (cur) cur.content = editor.value
+    if (cur) cur.content = getEditorContent()
   }
   try {
     await window.api.editor.switchDocument(docId)
@@ -121,7 +144,6 @@ async function switchToDoc(docId: string): Promise<void> {
   loadActiveBuffer()
   updateDocStatus()
   renderTabs()
-  schedulePreview()
   loadBacklinks()
 }
 
@@ -138,32 +160,6 @@ async function setDirty(value: boolean): Promise<void> {
   }
   updateDocStatus()
   renderTabs()
-}
-
-let previewTimer: ReturnType<typeof setTimeout> | null = null
-
-function schedulePreview(): void {
-  if (previewTimer) clearTimeout(previewTimer)
-  previewTimer = setTimeout(() => {
-    renderPreview()
-  }, 150)
-}
-
-async function renderPreview(): Promise<void> {
-  const tab = activeTab()
-  if (!tab) {
-    preview.innerHTML = ''
-    previewStatus.textContent = ''
-    return
-  }
-  const content = editor.value
-  try {
-    const result = await window.api.knowledge.render(content)
-    preview.innerHTML = result.html
-    previewStatus.textContent = ''
-  } catch (e) {
-    previewStatus.textContent = '[Error: ' + (e as Error).message + ']'
-  }
 }
 
 function noteNameFromPath(filePath: string): string {
@@ -201,49 +197,6 @@ async function loadBacklinks(): Promise<void> {
     console.warn('Failed to load backlinks', (e as Error).message)
   }
 }
-
-async function handleWikiLinkClick(name: string): Promise<void> {
-  try {
-    const resolved = await window.api.knowledge.resolveLink(name)
-    if (resolved) {
-      await openFile(resolved.path)
-    } else {
-      const confirmed = confirm("Create note '" + name + "'?")
-      if (confirmed) {
-        const result = await window.api.knowledge.createNoteFromLink(name)
-        await loadExplorer()
-        await openFile(result.path)
-      }
-    }
-  } catch (e) {
-    alert((e as Error).message)
-  }
-}
-
-async function handleTagClick(tag: string): Promise<void> {
-  try {
-    const notes = await window.api.knowledge.findNotesByTag(tag)
-    if (notes.length === 0) {
-      alert('No notes with tag #' + tag)
-    } else {
-      const lines = notes.map(n => n.name + ' -> ' + n.path)
-      alert('Notes with tag #' + tag + ':\n\n' + lines.join('\n'))
-    }
-  } catch (e) {
-    alert((e as Error).message)
-  }
-}
-
-preview.addEventListener('click', (e) => {
-  const target = e.target as HTMLElement
-  if (target.dataset.wiki) {
-    e.preventDefault()
-    handleWikiLinkClick(target.dataset.wiki)
-  } else if (target.dataset.tag) {
-    e.preventDefault()
-    handleTagClick(target.dataset.tag)
-  }
-})
 
 async function loadCurrentVault(): Promise<void> {
   try {
@@ -284,7 +237,6 @@ async function restoreTabs(): Promise<void> {
   }
   if (activeDocId) {
     loadActiveBuffer()
-    schedulePreview()
     loadBacklinks()
   }
   updateDocStatus()
@@ -372,7 +324,7 @@ function refreshAllMarkers(): void {
 async function openFile(filePath: string): Promise<void> {
   if (activeDocId) {
     const cur = tabs.get(activeDocId)
-    if (cur) cur.content = editor.value
+    if (cur) cur.content = getEditorContent()
   }
   try {
     const result = await window.api.editor.openDocument(filePath)
@@ -387,7 +339,6 @@ async function openFile(filePath: string): Promise<void> {
     loadActiveBuffer()
     updateDocStatus()
     renderTabs()
-    schedulePreview()
     loadBacklinks()
   } catch (e) {
     alert((e as Error).message)
@@ -397,7 +348,7 @@ async function openFile(filePath: string): Promise<void> {
 async function doSave(): Promise<void> {
   const tab = activeTab()
   if (!tab) return
-  tab.content = editor.value
+  tab.content = getEditorContent()
   try {
     await window.api.editor.saveDocument(tab.content)
     tab.dirty = false
@@ -416,7 +367,7 @@ async function doSave(): Promise<void> {
 async function doSaveAs(): Promise<void> {
   const tab = activeTab()
   if (!tab) return
-  tab.content = editor.value
+  tab.content = getEditorContent()
   try {
     const result = await window.api.editor.saveAsDocument(tab.content)
     if (result) {
@@ -434,7 +385,7 @@ async function doSaveAs(): Promise<void> {
 async function doNew(): Promise<void> {
   if (activeDocId) {
     const cur = tabs.get(activeDocId)
-    if (cur) cur.content = editor.value
+    if (cur) cur.content = getEditorContent()
   }
   try {
     const result = await window.api.editor.newDocument()
@@ -443,7 +394,6 @@ async function doNew(): Promise<void> {
     loadActiveBuffer()
     updateDocStatus()
     renderTabs()
-    schedulePreview()
     loadBacklinks()
   } catch (e) {
     alert((e as Error).message)
@@ -463,7 +413,6 @@ async function closeDoc(docId: string): Promise<void> {
     if (activeDocId === docId) {
       activeDocId = result.newActiveId
       loadActiveBuffer()
-      schedulePreview()
       loadBacklinks()
     }
     updateDocStatus()
@@ -523,14 +472,6 @@ createBtn.addEventListener('click', async () => {
   }
 })
 
-editor.addEventListener('input', () => {
-  const tab = activeTab()
-  if (tab && !tab.dirty) {
-    setDirty(true)
-  }
-  schedulePreview()
-})
-
 newDocBtn.addEventListener('click', () => {
   doNew()
 })
@@ -541,6 +482,49 @@ saveDocBtn.addEventListener('click', () => {
 
 saveAsDocBtn.addEventListener('click', () => {
   doSaveAs()
+})
+
+async function handleWikiLinkClick(name: string): Promise<void> {
+  try {
+    const resolved = await window.api.knowledge.resolveLink(name)
+    if (resolved) {
+      await openFile(resolved.path)
+    } else {
+      const confirmed = confirm("Create note '" + name + "'?")
+      if (confirmed) {
+        const result = await window.api.knowledge.createNoteFromLink(name)
+        await loadExplorer()
+        await openFile(result.path)
+      }
+    }
+  } catch (e) {
+    alert((e as Error).message)
+  }
+}
+
+async function handleTagClick(tag: string): Promise<void> {
+  try {
+    const notes = await window.api.knowledge.findNotesByTag(tag)
+    if (notes.length === 0) {
+      alert('No notes with tag #' + tag)
+    } else {
+      const lines = notes.map(n => n.name + ' -> ' + n.path)
+      alert('Notes with tag #' + tag + ':\n\n' + lines.join('\n'))
+    }
+  } catch (e) {
+    alert((e as Error).message)
+  }
+}
+
+editorHost.addEventListener('click', (e) => {
+  const target = e.target as HTMLElement
+  if (target.dataset.wiki) {
+    e.preventDefault()
+    handleWikiLinkClick(target.dataset.wiki)
+  } else if (target.dataset.tag) {
+    e.preventDefault()
+    handleTagClick(target.dataset.tag)
+  }
 })
 
 document.addEventListener('keydown', (e) => {
@@ -612,6 +596,8 @@ searchInput.addEventListener('keydown', (e) => {
     runSearch()
   }
 })
+
+editorView = createEditorView(editorHost, '', onEditorContentChange)
 
 updateDocStatus()
 loadCurrentVault()

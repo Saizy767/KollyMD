@@ -24,8 +24,6 @@ import {
   EditorIpcHandler
 } from './modules/editor'
 import {
-  MarkedMarkdownRenderer,
-  RenderMarkdown,
   FindBacklinks,
   FindNotesByTag,
   ResolveLink,
@@ -66,8 +64,6 @@ export function bootstrap(ipcMain: IpcMain): void {
   const switchDocument = new SwitchDocument(docRepo)
   const getOpenDocuments = new GetOpenDocuments(docRepo)
 
-  const markdownRenderer = new MarkedMarkdownRenderer()
-  const renderMarkdown = new RenderMarkdown(markdownRenderer)
   const findBacklinks = new FindBacklinks(vaultRepo, noteRepo)
   const findNotesByTag = new FindNotesByTag(vaultRepo, noteRepo)
   const resolveLink = new ResolveLink(vaultRepo, noteRepo)
@@ -107,7 +103,6 @@ export function bootstrap(ipcMain: IpcMain): void {
 
   const knowledgeIpc = new KnowledgeIpcHandler(
     ipcMain,
-    renderMarkdown,
     findBacklinks,
     findNotesByTag,
     resolveLink,

@@ -243,45 +243,102 @@ body {
   margin-left: 8px;
 }
 
-#editor {
+#editor-host {
   flex: 1;
   width: 100%;
   background: #1e1e1e;
-  color: #d4d4d4;
-  border: none;
-  border-radius: 0;
-  padding: 12px;
+  overflow: auto;
+}
+
+#editor-host .cm-editor {
+  height: 100%;
   font-family: "SF Mono", Menlo, Monaco, Consolas, monospace;
   font-size: 13px;
+}
+
+#editor-host .cm-scroller {
+  font-family: inherit;
   line-height: 1.5;
-  resize: none;
-  outline: none;
 }
 
-#preview {
+#editor-host .cm-content {
   padding: 12px;
-  overflow: auto;
-  max-height: 40%;
-  border-top: 1px solid #333;
-  background: #1e1e1e;
 }
 
-#preview a[data-wiki],
-#preview a[data-tag] {
+#editor-host .cm-h1 {
+  font-size: 1.8em;
+  font-weight: bold;
+  color: #e8e8e8;
+}
+
+#editor-host .cm-h2 {
+  font-size: 1.5em;
+  font-weight: bold;
+  color: #e8e8e8;
+}
+
+#editor-host .cm-h3 {
+  font-size: 1.25em;
+  font-weight: bold;
+  color: #e8e8e8;
+}
+
+#editor-host .cm-h4,
+#editor-host .cm-h5,
+#editor-host .cm-h6 {
+  font-weight: bold;
+  color: #e8e8e8;
+}
+
+#editor-host .cm-strong {
+  font-weight: bold;
+}
+
+#editor-host .cm-em {
+  font-style: italic;
+}
+
+#editor-host .cm-code-inline {
+  font-family: "SF Mono", Menlo, Monaco, Consolas, monospace;
+  background: #2a2a2a;
+  border-radius: 3px;
+  padding: 0 2px;
+}
+
+#editor-host .cm-code-block {
+  font-family: "SF Mono", Menlo, Monaco, Consolas, monospace;
+  background: #1a1a1a;
+  padding: 2px 0;
+}
+
+#editor-host .cm-blockquote {
+  border-left: 3px solid #555;
+  padding-left: 8px;
+  color: #aaa;
+  font-style: italic;
+}
+
+#editor-host .cm-link {
+  color: #4daafc;
+  text-decoration: none;
+}
+
+#editor-host .cm-hr-widget {
+  border: none;
+  border-top: 1px solid #444;
+  margin: 8px 0;
+}
+
+#editor-host .cm-wikilink,
+#editor-host .cm-tag {
   color: #4daafc;
   cursor: pointer;
   text-decoration: none;
 }
 
-#preview a[data-wiki]:hover,
-#preview a[data-tag]:hover {
+#editor-host .cm-wikilink:hover,
+#editor-host .cm-tag:hover {
   text-decoration: underline;
-}
-
-#preview-status {
-  font-size: 11px;
-  color: #888;
-  padding: 4px 12px;
 }
 
 #backlinks {

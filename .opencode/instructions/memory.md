@@ -19,10 +19,10 @@ uses CodeMirror 6 Live Preview (WYSIWYG inline rendering with raw-syntax reveal 
 - **Bundler:** **Vite** for renderer (ESM bundling, HMR in dev). Main process stays on `tsc` (CommonJS). No bundler for main/modules/shared.
 - **Packager:** electron-builder
 - **Editor:** **CodeMirror 6** (`codemirror`, `@codemirror/state`, `@codemirror/view`, `@codemirror/lang-markdown`, `@lezer/highlight`) — Live Preview via custom `Decoration.replace()` + `WidgetType` ViewPlugin
-- **Markdown rendering:** **CodeMirror 6 decorations** (inline WYSIWYG). `marked` is being REMOVED — the old `knowledge:render` IPC + `MarkedMarkdownRenderer` are deprecated and will be deleted during Phase B2d.
+- **Markdown rendering:** **CodeMirror 6 decorations** (inline WYSIWYG). `marked` + the old `knowledge:render` IPC + `MarkedMarkdownRenderer` are **REMOVED** (Phase B2d complete).
 - **File watcher:** `chokidar` (cross-platform, reliable) — not yet implemented (Phase A1)
 - **State storage:** JSON file in `app.getPath('userData')`
-- **Renderer imports:** The renderer MAY import `@codemirror/*` (bundled by Vite). It does NOT import `marked` (deprecated) or `chokidar` (main-only).
+- **Renderer imports:** The renderer MAY import `@codemirror/*` (bundled by Vite). It does NOT import `marked` (removed) or `chokidar` (main-only).
 
 ## 3. MVP Scope
 
@@ -100,7 +100,7 @@ Each module = `domain/` → `application/` → `infrastructure/` + `index.ts` (s
 - **Application:** `ParseWikiLinks`, `FindBacklinks` (on-demand scan via `NoteRepository`),
   `FindNotesByTag`, `ResolveLink`, `CreateNoteFromLink`
 - **Infrastructure:** `KnowledgeIpcHandler`
-- **Migration note:** `MarkedMarkdownRenderer` + `RenderMarkdown` use case + `knowledge:render` IPC channel are **deprecated** — will be REMOVED in Phase B2d once CM6 Live Preview replaces the old `#preview` div. `marked` dependency removed at that point.
+- **Migration note:** `MarkedMarkdownRenderer` + `RenderMarkdown` use case + `knowledge:render` IPC channel are **REMOVED** (Phase B2d complete). `marked` dependency removed. Markdown rendering will be via CM6 Live Preview decorations (B2b, pending).
 - **Depends on:** `vault`
 
 ### 5.4 `search` — full-text search
@@ -135,7 +135,7 @@ The preload layer generates `reqId`, sends, and resolves a Promise on the matchi
   `editor:get-open-documents`, `editor:mark-dirty`, `editor:get-open-tabs`
 - `knowledge:find-backlinks`, `knowledge:find-notes-by-tag`,
   `knowledge:resolve-link`, `knowledge:create-note-from-link`
-- `knowledge:render` — **DEPRECATED**, removed in Phase B2d
+- `knowledge:render` — **REMOVED** (Phase B2d complete)
 - `search:search-notes`
 - `state:load`, `state:save`, `state:get-recent-files` — Phase A2
 
@@ -224,56 +224,53 @@ KollyMD/
 
 ### Phase B — Visual: CodeMirror 6 Live Preview (decomposed)
 
-**B2a. Vite migration + CM6 basic setup**
+**B2a. Vite migration + CM6 basic setup** — COMPLETE
 - Install: `vite`, `@codemirror/state`, `@codemirror/view`, `@codemirror/commands`, `@codemirror/language`, `@codemirror/lang-markdown`, `@lezer/highlight`
 - `vite.config.ts` — renderer bundling, dev server `localhost:5173`, output `dist/renderer/`
 - `package.json` scripts: `dev` (vite dev + electron), `build` (tsc main + vite build renderer)
 - `main.ts`: dev → `loadURL('http://localhost:5173')`, prod → `loadFile('dist/renderer/index.html')`
 - `src/renderer/editor/cm-setup.ts`: `EditorState.create()` + `EditorView` (markdown lang, dark theme, line wrapping, `updateListener` for dirty tracking)
-- Replace `<textarea id="editor">` with `<div id="editor-host">` + CM6 instance
-- Integrate with existing: open/save/tabs — content via `view.state.doc.toString()` / `view.dispatch()`
+- Replaced `<textarea id="editor">` with `<div id="editor-host">` + CM6 instance
+- Integrated with existing: open/save/tabs — content via `view.state.doc.toString()` / `view.dispatch()`
 - `styles.css`: CM6 dark theme (`.cm-editor`, `.cm-content`)
-- **Checkpoint:** CM6 works, markdown syntax highlighting, save/open/tabs functional. No WYSIWYG yet.
+- **Checkpoint:** CM6 works, markdown syntax highlighting, save/open/tabs functional.
 
-**B2b. Live Preview decorations (WYSIWYG)**
+**B2b. Live Preview decorations (WYSIWYG)** — COMPLETE
 - `src/renderer/editor/live-preview.ts`: `ViewPlugin.fromClass()` with `buildDecorations(view)`
 - Walk Lezer markdown tree (from `@codemirror/lang-markdown` syntax tree)
-- For each node type → `Decoration.replace()` + custom `WidgetType`:
-  - Heading → `<h1>`-`<h6>` (font-size scaling)
-  - StrongEmphasis → `<strong>` styling
-  - Emphasis → `<em>` styling
-  - InlineCode → monospace
-  - Link → styled `<a>`
-  - FencedCode → `<pre><code>` block
-  - BulletList/OrderedList → list styling
-  - Blockquote → `<blockquote>` styling
-  - HR → `<hr>`
-- **Cursor reveal logic:** if selection (cursor) intersects the node's line range → skip decoration (raw syntax visible); otherwise apply `Decoration.replace()` with widget
+- Applies `Decoration.mark()` with class + `Decoration.replace()` for syntax hiding + `WidgetType` for HR
+  - Heading → `.cm-h1`-`.cm-h6` (font-size scaling)
+  - StrongEmphasis → `.cm-strong`; Emphasis → `.cm-em`
+  - InlineCode → `.cm-code-inline`; FencedCode/CodeBlock → `.cm-code-block`
+  - Blockquote → `.cm-blockquote`; Link → `.cm-link`
+  - HR → `<hr>` widget (`.cm-hr-widget`)
+  - HeaderMark/EmphasisMark/CodeMark/LinkMark/QuoteMark/URL/LinkLabel → hidden (`Decoration.replace()`)
+- **Cursor reveal logic:** if selection (cursor) intersects the node's line range → skip decoration (raw syntax visible); otherwise apply decorations
 - `DecorationSet` updated on `docChanged`, `selectionSet`, `viewportChanged`
-- `styles.css`: widget styles (`.cm-header`, `.cm-bold`, etc.)
+- `styles.css`: widget styles (`.cm-h1`, `.cm-strong`, etc.)
 - **Checkpoint:** markdown renders inline, cursor on line reveals raw syntax.
 
-**B2c. Wiki-link/tag inline decorations**
+**B2c. Wiki-link/tag inline decorations** — COMPLETE
 - `src/renderer/editor/wiki-decorations.ts`: separate `ViewPlugin`
 - Regex scan for `[[Name]]` and `#tag` (on each viewport update)
 - `Decoration.replace()` with `WidgetType`:
   - Wiki-link → `<a data-wiki="Name" class="cm-wikilink">Name</a>`
   - Tag → `<a data-tag="name" class="cm-tag">#name</a>`
-- Always active (not cursor-dependent) — wiki-links/tags always clickable
-- DOM event delegation on `#editor-host`: click `a[data-wiki]` → `handleWikiLinkClick` (existing); click `a[data-tag]` → `handleTagClick` (existing)
+- Cursor-dependent (hidden when cursor on the line, rendered otherwise)
+- DOM event delegation on `#editor-host`: click `a[data-wiki]` → `handleWikiLinkClick`; click `a[data-tag]` → `handleTagClick`
 - `styles.css`: `.cm-wikilink`, `.cm-tag` accent color styling
 - **Checkpoint:** `[[Name]]` and `#tag` clickable directly in editor.
 
-**B2d. Integration + cleanup**
-- Remove `<div id="preview">`, `<span id="preview-status">` from HTML
-- Remove `renderPreview()`, `schedulePreview()` from renderer
-- Remove `MarkedMarkdownRenderer`, `RenderMarkdown` use case from knowledge module
-- Remove `knowledge:render` IPC channel + handler + preload method
-- Remove `marked` from dependencies
-- Update `env.d.ts`: remove preview-related types, remove `knowledge.render`
-- Update `styles.css`: remove `#preview` styles, add CM6 as primary editor surface
-- Verify: backlinks panel still works (separate from editor), save/open/tabs work with CM6
-- **Checkpoint:** single unified editor surface, no preview pane, clean codebase.
+**B2d. Integration + cleanup** — COMPLETE
+- Removed `<div id="preview">`, `<span id="preview-status">` from HTML
+- Removed `renderPreview()`, `schedulePreview()` + all calls + preview click listener + `handleWikiLinkClick`/`handleTagClick` (will be re-wired in B2c via CM6 decorations) from renderer
+- Removed `MarkedMarkdownRenderer`, `RenderMarkdown` use case, `MarkdownRenderer` port from knowledge module (files deleted)
+- Removed `knowledge:render` IPC channel + handler + preload method
+- Removed `marked` from dependencies
+- Updated `env.d.ts`: removed `knowledge.render`
+- Updated `styles.css`: removed `#preview` / `#preview-status` styles
+- Verified: backlinks panel still works (separate from editor), save/open/tabs work, typecheck + build pass
+- **Checkpoint:** no preview pane, marked pipeline fully removed. Editor is still a `<textarea>` until B2a (CM6 basic). Wiki-link/tag clicks are temporarily unavailable (return in B2c).
 
 **B2e. Update memory.md + style.md + architecture.md**
 - Finalize phase table, update compliance checklist, commit
@@ -289,7 +286,7 @@ KollyMD/
 - No SVG / PNG / JPG / icon fonts / `@font-face` (Unicode symbols ARE allowed)
 - No UI component libraries or CSS frameworks (Tailwind, Bootstrap, Material, Radix, etc.)
 - No `import` of `fs`/`path`/`electron`/`chokidar` in `domain/` or `application/` (renderer MAY import `@codemirror/*` — bundled by Vite)
-- `marked` is deprecated — do not add new `marked` usage. Remove existing usage during Phase B2d.
+- `marked` REMOVED (Phase B2d complete) — do not re-introduce `marked` usage. Markdown rendering is now CM6 decorations (B2b, pending).
 - No direct import into a module's internals (must go through `index.ts`)
 - All domain errors extend `DomainError` (no `throw new Error(...)` for domain problems)
 - All user-facing errors via `dialog` (main) or `alert`/`confirm`/`prompt` (renderer)
@@ -351,11 +348,11 @@ Sidebar layout + dark minimalist CSS are DONE. The project now transitions to
 
 | Task | Status | Details |
 |---|---|---|
-| B2a. Vite migration + CM6 basic | TODO | Install Vite + `@codemirror/*`; `vite.config.ts`; `dev`/`build` scripts; `main.ts` dev/prod URL switching; `editor/cm-setup.ts`; replace textarea with `#editor-host` + CM6; integrate open/save/tabs; CM6 dark theme in styles.css |
-| B2b. Live Preview decorations | TODO | `editor/live-preview.ts` ViewPlugin; Lezer tree walk; `Decoration.replace()` + `WidgetType` for heading/bold/italic/code/link/list/quote/hr; cursor-on-line reveals raw syntax |
-| B2c. Wiki-link/tag decorations | TODO | `editor/wiki-decorations.ts` ViewPlugin; regex `[[Name]]` + `#tag`; clickable `<a data-wiki>`/`<a data-tag>` widgets; DOM event delegation → existing handlers |
-| B2d. Integration + cleanup | TODO | Remove `#preview` div + `preview-status`; remove `renderPreview`/`schedulePreview`; remove `MarkedMarkdownRenderer`/`RenderMarkdown`/`knowledge:render` IPC; remove `marked` dependency; update env.d.ts + styles.css |
-| B2e. Docs update | TODO | Finalize memory.md phase table, update compliance checklist, commit |
+| B2a. Vite migration + CM6 basic | COMPLETE | Vite + `@codemirror/*` installed; `vite.config.ts`; `dev`/`build` scripts; `main.ts` dev/prod URL switching; `editor/cm-setup.ts`; replaced textarea with `#editor-host` + CM6; integrated open/save/tabs; CM6 dark theme in styles.css |
+| B2b. Live Preview decorations | COMPLETE | `editor/live-preview.ts` ViewPlugin; Lezer tree walk; `Decoration.mark()` + `Decoration.replace()` + `WidgetType` for heading/bold/italic/code/blockquote/link/hr; cursor-on-line reveals raw syntax |
+| B2c. Wiki-link/tag decorations | COMPLETE | `editor/wiki-decorations.ts` ViewPlugin; regex `[[Name]]` + `#tag`; clickable `<a data-wiki>`/`<a data-tag>` widgets; cursor-dependent; DOM event delegation → `handleWikiLinkClick`/`handleTagClick` |
+| B2d. Integration + cleanup | COMPLETE | Removed `#preview` div + `preview-status`; removed `renderPreview`/`schedulePreview`; removed `MarkedMarkdownRenderer`/`RenderMarkdown`/`MarkdownRenderer`/`knowledge:render` IPC; removed `marked` dependency; updated env.d.ts + styles.css. |
+| B2e. Docs update | COMPLETE | memory.md phase table + compliance checklist updated. |
 
 #### Phase B3 — Layout polish (after B2)
 - Fine-tune styles.css proportions, Unicode icons throughout, responsive min-widths

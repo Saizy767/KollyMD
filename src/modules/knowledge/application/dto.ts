@@ -1,7 +1,3 @@
-export interface RenderedMarkdownDto {
-  html: string
-}
-
 export interface BacklinkDto {
   sourcePath: string
   sourceName: string

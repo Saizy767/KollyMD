@@ -1,11 +1,9 @@
 import { IpcMain, dialog } from 'electron'
-import type { RenderMarkdown } from '../../application/use-cases/RenderMarkdown'
 import type { FindBacklinks } from '../../application/use-cases/FindBacklinks'
 import type { FindNotesByTag } from '../../application/use-cases/FindNotesByTag'
 import type { ResolveLink } from '../../application/use-cases/ResolveLink'
 import type { CreateNoteFromLink } from '../../application/use-cases/CreateNoteFromLink'
 import type {
-  RenderedMarkdownDto,
   BacklinkDto,
   NoteRefDto,
   ResolvedLinkDto,
@@ -15,7 +13,6 @@ import type {
 export class KnowledgeIpcHandler {
   constructor(
     private readonly ipcMain: IpcMain,
-    private readonly renderMarkdown: RenderMarkdown,
     private readonly findBacklinks: FindBacklinks,
     private readonly findNotesByTag: FindNotesByTag,
     private readonly resolveLink: ResolveLink,
@@ -23,24 +20,6 @@ export class KnowledgeIpcHandler {
   ) {}
 
   register(): void {
-    this.ipcMain.on(
-      'knowledge:render',
-      (event, payload: { reqId: string; args: [string] }) => {
-        const { reqId, args } = payload
-        const [content] = args
-        try {
-          const dto: RenderedMarkdownDto = this.renderMarkdown.execute(content)
-          event.reply('kolly:reply', { reqId, data: dto })
-        } catch (e) {
-          dialog.showMessageBox({
-            type: 'error',
-            message: (e as Error).message
-          })
-          event.reply('kolly:reply', { reqId, error: true })
-        }
-      }
-    )
-
     this.ipcMain.on(
       'knowledge:find-backlinks',
       (event, payload: { reqId: string; args: [string] }) => {

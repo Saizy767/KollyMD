@@ -62,7 +62,6 @@ const api = {
     getOpenTabs: () => request<string[]>('editor:get-open-tabs')
   },
   knowledge: {
-    render: (content: string) => request<{ html: string }>('knowledge:render', content),
     findBacklinks: (noteName: string) =>
       request<unknown[]>('knowledge:find-backlinks', noteName),
     findNotesByTag: (tag: string) =>

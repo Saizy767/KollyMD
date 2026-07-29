@@ -73,7 +73,6 @@ interface NoteRefDto {
 }
 
 interface KnowledgeApi {
-  render: (content: string) => Promise<{ html: string }>
   findBacklinks: (noteName: string) => Promise<BacklinkDto[]>
   findNotesByTag: (tag: string) => Promise<NoteRefDto[]>
   resolveLink: (noteName: string) => Promise<{ path: string } | null>
