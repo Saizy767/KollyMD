@@ -341,6 +341,29 @@ body {
   text-decoration: underline;
 }
 
+#editor-host .cm-math-block {
+  display: block;
+  margin: 8px 0;
+  text-align: center;
+}
+
+#editor-host .cm-math-inline {
+  display: inline;
+}
+
+#editor-host .cm-math .katex {
+  color: inherit;
+  font-size: 1.05em;
+}
+
+#editor-host .cm-math-block .katex-display {
+  margin: 0;
+}
+
+#editor-host .cm-math-error {
+  color: #f48771;
+}
+
 #backlinks {
   list-style: none;
   margin: 0;
