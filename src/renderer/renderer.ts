@@ -10,9 +10,6 @@ const createBtn = document.getElementById('create-note') as HTMLButtonElement
 const explorerTree = document.getElementById('explorer-tree') as HTMLUListElement
 const explorerStatus = document.getElementById('explorer-status') as HTMLSpanElement
 
-const newDocBtn = document.getElementById('new-doc') as HTMLButtonElement
-const saveDocBtn = document.getElementById('save-doc') as HTMLButtonElement
-const saveAsDocBtn = document.getElementById('save-as-doc') as HTMLButtonElement
 const docStatus = document.getElementById('doc-status') as HTMLSpanElement
 const editorHost = document.getElementById('editor-host') as HTMLDivElement
 const tabsList = document.getElementById('tabs-list') as HTMLUListElement
@@ -345,61 +342,6 @@ async function openFile(filePath: string): Promise<void> {
   }
 }
 
-async function doSave(): Promise<void> {
-  const tab = activeTab()
-  if (!tab) return
-  tab.content = getEditorContent()
-  try {
-    await window.api.editor.saveDocument(tab.content)
-    tab.dirty = false
-    updateDocStatus()
-    renderTabs()
-  } catch (e) {
-    const kollyErr = e as KollyError
-    if (kollyErr.code === 'DOCUMENT_HAS_NO_PATH') {
-      await doSaveAs()
-    } else {
-      alert((e as Error).message)
-    }
-  }
-}
-
-async function doSaveAs(): Promise<void> {
-  const tab = activeTab()
-  if (!tab) return
-  tab.content = getEditorContent()
-  try {
-    const result = await window.api.editor.saveAsDocument(tab.content)
-    if (result) {
-      tab.path = result.path
-      tab.dirty = false
-      updateDocStatus()
-      renderTabs()
-      await loadExplorer()
-    }
-  } catch (e) {
-    alert((e as Error).message)
-  }
-}
-
-async function doNew(): Promise<void> {
-  if (activeDocId) {
-    const cur = tabs.get(activeDocId)
-    if (cur) cur.content = getEditorContent()
-  }
-  try {
-    const result = await window.api.editor.newDocument()
-    tabs.set(result.docId, { path: null, content: '', dirty: false })
-    activeDocId = result.docId
-    loadActiveBuffer()
-    updateDocStatus()
-    renderTabs()
-    loadBacklinks()
-  } catch (e) {
-    alert((e as Error).message)
-  }
-}
-
 async function closeDoc(docId: string): Promise<void> {
   const tab = tabs.get(docId)
   if (!tab) return
@@ -472,18 +414,6 @@ createBtn.addEventListener('click', async () => {
   }
 })
 
-newDocBtn.addEventListener('click', () => {
-  doNew()
-})
-
-saveDocBtn.addEventListener('click', () => {
-  doSave()
-})
-
-saveAsDocBtn.addEventListener('click', () => {
-  doSaveAs()
-})
-
 async function handleWikiLinkClick(name: string): Promise<void> {
   try {
     const resolved = await window.api.knowledge.resolveLink(name)
@@ -524,13 +454,6 @@ editorHost.addEventListener('click', (e) => {
   } else if (target.dataset.tag) {
     e.preventDefault()
     handleTagClick(target.dataset.tag)
-  }
-})
-
-document.addEventListener('keydown', (e) => {
-  if ((e.ctrlKey || e.metaKey) && e.key === 's') {
-    e.preventDefault()
-    doSave()
   }
 })
 

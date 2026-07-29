@@ -58,10 +58,6 @@ interface EditorApi {
   getOpenTabs: () => Promise<string[]>
 }
 
-interface KollyError extends Error {
-  code?: string
-}
-
 interface BacklinkDto {
   sourcePath: string
   sourceName: string
