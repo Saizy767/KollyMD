@@ -31,3 +31,11 @@ export class NoteNameCollisionError extends DomainError {
     super(`Cannot create note: too many name collisions for "${baseName}"`)
   }
 }
+
+export class EntryNotFoundError extends DomainError {
+  readonly code = 'ENTRY_NOT_FOUND'
+
+  constructor(path: string) {
+    super(`Entry not found: "${path}"`)
+  }
+}

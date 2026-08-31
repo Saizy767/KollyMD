@@ -17,7 +17,6 @@
       <span id="search-status"></span>
     </div>
     <div id="explorer">
-      <button id="create-note">Create</button>
       <button id="refresh-explorer">Refresh</button>
       <ul id="explorer-tree"></ul>
       <span id="explorer-status"></span>
@@ -32,6 +31,16 @@
     <div id="editor-host"></div>
     <ul id="backlinks"></ul>
   </main>
+  <div id="prompt-dialog" hidden>
+    <div id="prompt-box">
+      <span id="prompt-message"></span>
+      <input id="prompt-input" type="text">
+      <div id="prompt-buttons">
+        <button id="prompt-ok">OK</button>
+        <button id="prompt-cancel">Cancel</button>
+      </div>
+    </div>
+  </div>
   <script type="module" src="./renderer.js"></script>
 </body>
 </html>

@@ -16,7 +16,8 @@ class MathWidget extends WidgetType {
     try {
       span.innerHTML = katex.renderToString(this.latex, {
         displayMode: this.displayMode,
-        throwOnError: false
+        throwOnError: false,
+        strict: false
       })
     } catch {
       span.textContent = this.latex

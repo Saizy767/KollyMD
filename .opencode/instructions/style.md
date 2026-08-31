@@ -21,8 +21,8 @@ The primary focus of KollyMD is functional correctness. The frontend (Electron r
 ### 3. Native Dialogs (Electron)
 - Use **exclusively** native OS / browser dialogs to display errors, notifications, and confirmation requests.
 - In the main process: use the `dialog` module from `electron`.
-- In the renderer process: use standard browser `alert()`, `confirm()`, and `prompt()`.
-- **Strictly prohibit** creating any custom modals, toasts, snackbars, or notification panels inside the HTML.
+- In the renderer process: use standard browser `alert()` and `confirm()`. For text input use the single designated `#prompt-dialog` modal (`customPrompt()`), because Electron does not implement `window.prompt()`.
+- **Strictly prohibit** creating any custom modals, toasts, snackbars, or notification panels inside the HTML, **except** the single `#prompt-dialog` input dialog.
 
 ### 4. Text-Based Feedback (States)
 System and form states are shown with text plus the basic `disabled`/`hidden` attributes — no spinners, no color-coded badges:

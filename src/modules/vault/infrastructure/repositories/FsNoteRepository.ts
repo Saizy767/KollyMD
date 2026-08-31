@@ -2,7 +2,7 @@ import * as fs from 'fs'
 import * as path from 'path'
 import type { NoteRepository, NoteContent } from '../../domain/interfaces/NoteRepository'
 import { NoteEntry } from '../../domain/entities/NoteEntry'
-import { NoteNotFoundError, NoteNameCollisionError } from '../../domain/errors/VaultErrors'
+import { NoteNotFoundError, NoteNameCollisionError, EntryNotFoundError } from '../../domain/errors/VaultErrors'
 import { Logger } from '../../../../shared/infrastructure/Logger'
 
 export class FsNoteRepository implements NoteRepository {
@@ -32,6 +32,23 @@ export class FsNoteRepository implements NoteRepository {
     return fullPath
   }
 
+  createFolder(folderPath: string, baseName: string): string {
+    const stem = baseName
+    let candidate = baseName
+    let counter = 0
+    while (fs.existsSync(path.join(folderPath, candidate))) {
+      counter++
+      if (counter > 1000) {
+        throw new NoteNameCollisionError(baseName)
+      }
+      candidate = `${stem}-${counter}`
+    }
+
+    const fullPath = path.join(folderPath, candidate)
+    fs.mkdirSync(fullPath)
+    return fullPath
+  }
+
   readNote(filePath: string): string {
     if (!fs.existsSync(filePath)) {
       throw new NoteNotFoundError(filePath)
@@ -52,6 +69,23 @@ export class FsNoteRepository implements NoteRepository {
     const notes: NoteContent[] = []
     this.collectNotes(vaultRoot, notes)
     return notes
+  }
+
+  renameEntry(oldPath: string, newName: string): string {
+    if (!fs.existsSync(oldPath)) {
+      throw new EntryNotFoundError(oldPath)
+    }
+    const parentDir = path.dirname(oldPath)
+    const newPath = path.join(parentDir, newName)
+    fs.renameSync(oldPath, newPath)
+    return newPath
+  }
+
+  deleteEntry(entryPath: string): void {
+    if (!fs.existsSync(entryPath)) {
+      throw new EntryNotFoundError(entryPath)
+    }
+    fs.rmSync(entryPath, { recursive: true, force: true })
   }
 
   private searchByName(dirPath: string, target: string): string | null {

@@ -59,7 +59,7 @@ All decisions MUST comply with `architecture.md` and `style.md`. Key resolutions
 | Domain purity | `NotePath` VO is a pure string; name→fs path mapping lives in `infrastructure` | architecture.md:16 |
 | Cross-module deps | ONLY via another module's `index.ts` | architecture.md:86 |
 | Domain errors | Caught in IPC handler → shown via `dialog` (main) | architecture.md:28 + style.md:19 |
-| Renderer dialogs | `alert()` / `confirm()` / `prompt()` only | style.md:21 |
+| Renderer dialogs | `alert()` / `confirm()` native; text input via single `#prompt-dialog` modal (`customPrompt()`) — Electron does not implement `window.prompt()` | style.md:21 |
 | Active tab marker | `data-active="true"` attribute on `<li>` (no CSS, no visual prefix) | user choice |
 | Close tab button | Text `<button>Close</button>` (no SVG/icon) | style.md:15 |
 | Loading state | Button text → "Loading..." + `disabled` attribute | style.md:26 |
@@ -76,7 +76,7 @@ All decisions MUST comply with `architecture.md` and `style.md`. Key resolutions
 | Theme | Dark minimalist (dark bg, light text, one accent) | Obsidian-like |
 | UI libraries | BANNED (no Material/Radix/Headless, no Tailwind/Bootstrap) | style.md |
 | Renderer stack | Vanilla TS (no React/Vue/Svelte) — stays. CM6 is a library, not a framework. | user choice |
-| Native dialogs | Stays (alert/confirm/prompt) even after visual phase | user choice |
+| Native dialogs | Stays (alert/confirm native; prompt via single `#prompt-dialog` modal since Electron lacks `window.prompt()`) even after visual phase | user choice |
 
 ## 5. Module Structure (5 bounded contexts)
 
@@ -289,7 +289,7 @@ KollyMD/
 - `marked` REMOVED (Phase B2d complete) — do not re-introduce `marked` usage. Markdown rendering is now CM6 decorations (B2b, pending).
 - No direct import into a module's internals (must go through `index.ts`)
 - All domain errors extend `DomainError` (no `throw new Error(...)` for domain problems)
-- All user-facing errors via `dialog` (main) or `alert`/`confirm`/`prompt` (renderer)
+- All user-facing errors via `dialog` (main) or `alert`/`confirm` (renderer); text input via `#prompt-dialog` (`customPrompt()`)
 - No silent error swallowing
 - No DI container / no decorators for injection
 - Each module exposes exactly one `index.ts`

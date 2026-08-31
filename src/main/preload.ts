@@ -40,7 +40,15 @@ const api = {
     getCurrentVault: () => request<{ rootPath: string } | null>('vault:get-current-vault'),
     listNotes: () => request<unknown[]>('vault:list-notes'),
     createNote: (folderPath: string, baseName: string, content: string) =>
-      request<{ path: string }>('vault:create-note', folderPath, baseName, content)
+      request<{ path: string }>('vault:create-note', folderPath, baseName, content),
+    createFolder: (folderPath: string, baseName: string) =>
+      request<{ path: string }>('vault:create-folder', folderPath, baseName),
+    contextMenu: (entryPath: string, kind: 'root' | 'folder' | 'file') =>
+      request<{ action: string } | null>('vault:context-menu', entryPath, kind),
+    renameEntry: (oldPath: string, newName: string) =>
+      request<{ path: string }>('vault:rename-entry', oldPath, newName),
+    deleteEntry: (entryPath: string) =>
+      request<void>('vault:delete-entry', entryPath)
   },
   editor: {
     openDocument: (filePath: string) =>

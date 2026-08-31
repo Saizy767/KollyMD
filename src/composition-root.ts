@@ -8,6 +8,9 @@ import {
   GetCurrentVault,
   ListNotes,
   CreateNote,
+  CreateFolder,
+  RenameEntry,
+  DeleteEntry,
   VaultIpcHandler,
   Vault
 } from './modules/vault'
@@ -53,6 +56,9 @@ export function bootstrap(ipcMain: IpcMain): void {
   const getCurrentVault = new GetCurrentVault(vaultRepo)
   const listNotes = new ListNotes(vaultRepo, noteRepo)
   const createNote = new CreateNote(vaultRepo, noteRepo)
+  const createFolder = new CreateFolder(vaultRepo, noteRepo)
+  const renameEntry = new RenameEntry(vaultRepo, noteRepo)
+  const deleteEntry = new DeleteEntry(vaultRepo, noteRepo)
 
   const docRepo = new InMemoryDocumentRepository()
   const openDocument = new OpenDocument(docRepo, noteRepo)
@@ -82,6 +88,9 @@ export function bootstrap(ipcMain: IpcMain): void {
     getCurrentVault,
     listNotes,
     createNote,
+    createFolder,
+    renameEntry,
+    deleteEntry,
     setLastVault
   )
   vaultIpc.register()

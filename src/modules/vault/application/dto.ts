@@ -13,6 +13,10 @@ export interface CreatedNoteDto {
   path: string
 }
 
+export interface RenamedEntryDto {
+  path: string
+}
+
 export interface NoteContentDto {
   path: string
   content: string

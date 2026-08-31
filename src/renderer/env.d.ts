@@ -14,6 +14,10 @@ interface VaultApi {
   getCurrentVault: () => Promise<VaultDto | null>
   listNotes: () => Promise<NoteEntryDto[]>
   createNote: (folderPath: string, baseName: string, content: string) => Promise<{ path: string }>
+  createFolder: (folderPath: string, baseName: string) => Promise<{ path: string }>
+  contextMenu: (entryPath: string, kind: 'root' | 'folder' | 'file') => Promise<{ action: string } | null>
+  renameEntry: (oldPath: string, newName: string) => Promise<{ path: string }>
+  deleteEntry: (entryPath: string) => Promise<void>
 }
 
 interface OpenDocumentDto {

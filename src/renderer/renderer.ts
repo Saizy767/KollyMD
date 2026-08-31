@@ -6,7 +6,6 @@ import type { EditorView } from '@codemirror/view'
 const selectDirBtn = document.getElementById('select-dir') as HTMLButtonElement
 const vaultPathEl = document.getElementById('vault-path') as HTMLSpanElement
 const refreshBtn = document.getElementById('refresh-explorer') as HTMLButtonElement
-const createBtn = document.getElementById('create-note') as HTMLButtonElement
 const explorerTree = document.getElementById('explorer-tree') as HTMLUListElement
 const explorerStatus = document.getElementById('explorer-status') as HTMLSpanElement
 
@@ -18,6 +17,46 @@ const searchInput = document.getElementById('search') as HTMLInputElement
 const searchResults = document.getElementById('search-results') as HTMLUListElement
 const searchStatus = document.getElementById('search-status') as HTMLSpanElement
 const searchBtn = document.getElementById('search-btn') as HTMLButtonElement
+
+const promptDialog = document.getElementById('prompt-dialog') as HTMLDivElement
+const promptMessage = document.getElementById('prompt-message') as HTMLSpanElement
+const promptInput = document.getElementById('prompt-input') as HTMLInputElement
+const promptOk = document.getElementById('prompt-ok') as HTMLButtonElement
+const promptCancel = document.getElementById('prompt-cancel') as HTMLButtonElement
+
+let promptResolve: ((value: string | null) => void) | null = null
+
+function customPrompt(message: string, defaultValue: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    promptResolve = resolve
+    promptMessage.textContent = message
+    promptInput.value = defaultValue
+    promptDialog.hidden = false
+    promptInput.focus()
+    promptInput.select()
+  })
+}
+
+function closePrompt(result: string | null): void {
+  promptDialog.hidden = true
+  if (promptResolve) {
+    const r = promptResolve
+    promptResolve = null
+    r(result)
+  }
+}
+
+promptOk.addEventListener('click', () => closePrompt(promptInput.value))
+promptCancel.addEventListener('click', () => closePrompt(null))
+promptInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') {
+    e.preventDefault()
+    closePrompt(promptInput.value)
+  } else if (e.key === 'Escape') {
+    e.preventDefault()
+    closePrompt(null)
+  }
+})
 
 let vaultRootPath: string | null = null
 let selectedFolder: string | null = null
@@ -60,11 +99,14 @@ function updateSelectedFolderDisplay(): void {
   } else {
     explorerStatus.textContent = 'No vault selected'
   }
-  createBtn.disabled = !vaultRootPath
 }
 
 function folderMarker(entryPath: string): string {
   return entryPath === selectedFolder ? '[*]' : '[-]'
+}
+
+function ensureMdExtension(name: string): string {
+  return name.toLowerCase().endsWith('.md') ? name : name + '.md'
 }
 
 function docName(path: string | null): string {
@@ -195,6 +237,79 @@ async function loadBacklinks(): Promise<void> {
   }
 }
 
+async function handleEntryContextMenu(entryPath: string, currentName: string, kind: 'folder' | 'file'): Promise<void> {
+  const result = await window.api.vault.contextMenu(entryPath, kind)
+  if (!result) return
+
+  if (result.action === 'rename') {
+    const newName = await customPrompt('Enter new name:', currentName)
+    if (!newName || newName === currentName) return
+    try {
+      await window.api.vault.renameEntry(entryPath, newName)
+      await loadExplorer()
+    } catch (e) {
+      alert((e as Error).message)
+    }
+  } else if (result.action === 'new-file') {
+    const fileName = await customPrompt('Enter file name:', 'untitled.md')
+    if (!fileName) return
+    try {
+      await window.api.vault.createNote(entryPath, ensureMdExtension(fileName), '')
+      await loadExplorer()
+    } catch (e) {
+      alert((e as Error).message)
+    }
+  } else if (result.action === 'new-folder') {
+    const folderName = await customPrompt('Enter folder name:', 'untitled-folder')
+    if (!folderName) return
+    try {
+      await window.api.vault.createFolder(entryPath, folderName)
+      await loadExplorer()
+    } catch (e) {
+      alert((e as Error).message)
+    }
+  } else if (result.action === 'delete') {
+    const confirmed = confirm('Delete "' + currentName + '" and all its contents?')
+    if (!confirmed) return
+    try {
+      await window.api.vault.deleteEntry(entryPath)
+      if (selectedFolder === entryPath) {
+        selectedFolder = vaultRootPath
+        updateSelectedFolderDisplay()
+      }
+      await loadExplorer()
+    } catch (e) {
+      alert((e as Error).message)
+    }
+  }
+}
+
+async function handleRootContextMenu(): Promise<void> {
+  if (!vaultRootPath) return
+  const result = await window.api.vault.contextMenu(vaultRootPath, 'root')
+  if (!result) return
+
+  if (result.action === 'new-file') {
+    const fileName = await customPrompt('Enter file name:', 'untitled.md')
+    if (!fileName) return
+    try {
+      await window.api.vault.createNote(vaultRootPath, ensureMdExtension(fileName), '')
+      await loadExplorer()
+    } catch (e) {
+      alert((e as Error).message)
+    }
+  } else if (result.action === 'new-folder') {
+    const folderName = await customPrompt('Enter folder name:', 'untitled-folder')
+    if (!folderName) return
+    try {
+      await window.api.vault.createFolder(vaultRootPath, folderName)
+      await loadExplorer()
+    } catch (e) {
+      alert((e as Error).message)
+    }
+  }
+}
+
 async function loadCurrentVault(): Promise<void> {
   try {
     const vault = await window.api.vault.getCurrentVault()
@@ -290,13 +405,24 @@ function renderEntry(entry: NoteEntryDto): HTMLLIElement {
       refreshAllMarkers()
     })
 
+    toggle.addEventListener('contextmenu', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      handleEntryContextMenu(entry.path, entry.name, 'folder')
+    })
+
     li.appendChild(toggle)
     li.appendChild(childUl)
   } else {
     const span = document.createElement('span')
-    span.textContent = entry.name
+    span.textContent = entry.name.toLowerCase().endsWith('.md') ? entry.name.slice(0, -3) : entry.name
     span.addEventListener('click', () => {
       openFile(entry.path)
+    })
+    span.addEventListener('contextmenu', (e) => {
+      e.preventDefault()
+      e.stopPropagation()
+      handleEntryContextMenu(entry.path, entry.name, 'file')
     })
     li.appendChild(span)
   }
@@ -395,23 +521,12 @@ refreshBtn.addEventListener('click', () => {
   loadExplorer()
 })
 
-createBtn.addEventListener('click', async () => {
-  if (!selectedFolder) {
-    alert('No folder selected')
-    return
-  }
-  createBtn.textContent = 'Creating...'
-  createBtn.disabled = true
-  try {
-    const result = await window.api.vault.createNote(selectedFolder, 'unnamedfile.md', '')
-    await loadExplorer()
-    alert('Created: ' + result.path)
-  } catch (e) {
-    alert((e as Error).message)
-  } finally {
-    createBtn.textContent = 'Create'
-    createBtn.disabled = !vaultRootPath
-  }
+const explorerPanel = document.getElementById('explorer') as HTMLDivElement
+explorerPanel.addEventListener('contextmenu', (e) => {
+  const target = e.target as HTMLElement
+  if (target.closest('#refresh-explorer')) return
+  e.preventDefault()
+  handleRootContextMenu()
 })
 
 async function handleWikiLinkClick(name: string): Promise<void> {
