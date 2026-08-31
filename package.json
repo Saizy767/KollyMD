@@ -7,6 +7,10 @@
   "scripts": {
     "postinstall": "node node_modules/electron/install.js && xattr -r -d com.apple.quarantine node_modules/electron/dist/Electron.app 2>/dev/null; codesign --force --deep --sign - node_modules/electron/dist/Electron.app 2>/dev/null; true",
     "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.renderer.json --noEmit",
+    "lint:deps": "node scripts/lint-usecase-deps.mjs",
+    "lint:encapsulation": "node scripts/lint-module-encapsulation.mjs",
+    "lint:domain": "node scripts/lint-domain-purity.mjs",
+    "lint:arch": "npm run lint:deps && npm run lint:encapsulation && npm run lint:domain",
     "build:main": "tsc -p tsconfig.main.json",
     "build": "npm run build:main && vite build",
     "dev": "concurrently -k \"vite\" \"wait-on tcp:5173 && cross-env NODE_ENV=development electron .\"",
