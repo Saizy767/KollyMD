@@ -1,5 +1,5 @@
 ---
-description: Validates the project by running typecheck, build, architectural lint, and style lint. Use after making code changes to verify the project compiles, builds, and obeys architecture and style rules. Reports pass/fail with specific errors. Read-only — does not edit code.
+description: Validates the project by running typecheck, build, tests, architectural lint, and style lint. Use after making code changes to verify the project compiles, builds, tests pass, and obeys architecture and style rules. Reports pass/fail with specific errors. Read-only — does not edit code.
 mode: subagent
 permission:
   edit: deny
@@ -23,7 +23,7 @@ that the project is in a working state and report results. You do NOT edit code.
 6. Run `npm run lint:style-css` (single styles.css, no <style> tags, no inline styles).
 7. Run `npm run lint:style-assets` (no SVG/images/custom fonts in renderer).
 8. Run `npm run lint:style-deps` (no UI libraries or CSS frameworks in package.json).
-9. If all pass, report: "Validation passed: typecheck OK, build OK, arch lint OK, style lint OK."
+9. If all pass, report: "Validation passed: typecheck OK, build OK, tests OK, arch lint OK, style lint OK."
 10. If any fail, report the specific errors (file paths, line numbers, error
     messages). Do not attempt to fix them — just report.
 
