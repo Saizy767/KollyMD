@@ -48,7 +48,13 @@ const api = {
     renameEntry: (oldPath: string, newName: string) =>
       request<{ path: string }>('vault:rename-entry', oldPath, newName),
     deleteEntry: (entryPath: string) =>
-      request<void>('vault:delete-entry', entryPath)
+      request<void>('vault:delete-entry', entryPath),
+    readNote: (filePath: string) => request<string>('vault:read-note', filePath),
+    onNoteChanged: (cb: (events: { type: string; path: string }[]) => void): (() => void) => {
+      const handler = (_e: IpcRendererEvent, batch: { type: string; path: string }[]): void => cb(batch)
+      ipcRenderer.on('vault:note-changed', handler)
+      return () => { ipcRenderer.removeListener('vault:note-changed', handler) }
+    }
   },
   editor: {
     openDocument: (filePath: string) =>
@@ -67,7 +73,9 @@ const api = {
     switchDocument: (docId: string) => request<void>('editor:switch-document', docId),
     getOpenDocuments: () =>
       request<{ tabs: unknown[]; activeId: string | null }>('editor:get-open-documents'),
-    getOpenTabs: () => request<string[]>('editor:get-open-tabs')
+    getOpenTabs: () => request<string[]>('editor:get-open-tabs'),
+    updatePath: (docId: string, newPath: string) =>
+      request<void>('editor:update-path', docId, newPath)
   },
   knowledge: {
     findBacklinks: (noteName: string) =>

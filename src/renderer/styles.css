@@ -170,6 +170,11 @@ body {
   color: #fff;
 }
 
+#explorer-tree li[data-active="true"] > span {
+  color: #7ab7ff;
+  font-weight: bold;
+}
+
 /* ---------- Main area ---------- */
 
 #main {

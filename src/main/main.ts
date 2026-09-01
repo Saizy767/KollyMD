@@ -30,7 +30,7 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
-  bootstrap(ipcMain)
+  bootstrap(ipcMain, () => BrowserWindow.getAllWindows()[0] ?? null)
   createWindow()
 
   if (app.isPackaged && process.platform === 'linux') {

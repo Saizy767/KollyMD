@@ -10,6 +10,7 @@ import type { MarkDirty } from '../../application/use-cases/MarkDirty'
 import type { CloseDocument } from '../../application/use-cases/CloseDocument'
 import type { SwitchDocument } from '../../application/use-cases/SwitchDocument'
 import type { GetOpenDocuments } from '../../application/use-cases/GetOpenDocuments'
+import type { UpdateDocumentPath } from '../../application/use-cases/UpdateDocumentPath'
 import type {
   OpenDocumentDto,
   SavedDocumentDto,
@@ -30,6 +31,7 @@ export class EditorIpcHandler {
     private readonly closeDocument: CloseDocument,
     private readonly switchDocument: SwitchDocument,
     private readonly getOpenDocuments: GetOpenDocuments,
+    private readonly updateDocumentPath: UpdateDocumentPath,
     private readonly getOpenTabs: GetOpenTabs,
     private readonly getCurrentVault: GetCurrentVault
   ) {}
@@ -198,5 +200,19 @@ export class EditorIpcHandler {
         event.reply('kolly:reply', { reqId, error: true })
       }
     })
+
+    this.ipcMain.on(
+      'editor:update-path',
+      (event, payload: { reqId: string; args: [string, string] }) => {
+        const { reqId, args } = payload
+        const [docId, newPath] = args
+        try {
+          this.updateDocumentPath.execute(docId, newPath)
+          event.reply('kolly:reply', { reqId, data: null })
+        } catch (e) {
+          event.reply('kolly:reply', { reqId, error: true })
+        }
+      }
+    )
   }
 }

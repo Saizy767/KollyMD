@@ -5,7 +5,6 @@ import type { EditorView } from '@codemirror/view'
 
 const selectDirBtn = document.getElementById('select-dir') as HTMLButtonElement
 const vaultPathEl = document.getElementById('vault-path') as HTMLSpanElement
-const refreshBtn = document.getElementById('refresh-explorer') as HTMLButtonElement
 const explorerTree = document.getElementById('explorer-tree') as HTMLUListElement
 const explorerStatus = document.getElementById('explorer-status') as HTMLSpanElement
 
@@ -60,11 +59,15 @@ promptInput.addEventListener('keydown', (e) => {
 
 let vaultRootPath: string | null = null
 let selectedFolder: string | null = null
+const collapsedFolders = new Set<string>()
+const nodeMap = new Map<string, HTMLLIElement>()
 
 interface TabState {
   path: string | null
   content: string
   dirty: boolean
+  missing?: boolean
+  missingName?: string
 }
 const tabs = new Map<string, TabState>()
 let activeDocId: string | null = null
@@ -141,7 +144,9 @@ function renderTabs(): void {
     const label = document.createElement('span')
     const prefix = docId === activeDocId ? '[Active] ' : ''
     const dirtyMark = tab.dirty ? '[unsaved] ' : ''
-    label.textContent = prefix + dirtyMark + docName(tab.path)
+    const missingMark = tab.missing ? '[missing] ' : ''
+    const name = tab.missing ? (tab.missingName ?? 'untitled') : docName(tab.path)
+    label.textContent = prefix + dirtyMark + missingMark + name
     label.addEventListener('click', () => {
       switchToDoc(docId)
     })
@@ -183,6 +188,7 @@ async function switchToDoc(docId: string): Promise<void> {
   loadActiveBuffer()
   updateDocStatus()
   renderTabs()
+  refreshActiveHighlight()
   loadBacklinks()
 }
 
@@ -360,22 +366,19 @@ async function loadExplorer(): Promise<void> {
     updateSelectedFolderDisplay()
     return
   }
-  refreshBtn.textContent = 'Loading...'
-  refreshBtn.disabled = true
   try {
     const entries = await window.api.vault.listNotes()
     explorerTree.innerHTML = ''
+    nodeMap.clear()
     if (entries.length === 0) {
       explorerStatus.textContent = 'Vault is empty'
     } else {
       explorerTree.appendChild(renderTree(entries))
       updateSelectedFolderDisplay()
+      refreshActiveHighlight()
     }
   } catch (e) {
     explorerStatus.textContent = '[Error: ' + (e as Error).message + ']'
-  } finally {
-    refreshBtn.textContent = 'Refresh'
-    refreshBtn.disabled = false
   }
 }
 
@@ -389,17 +392,21 @@ function renderTree(entries: NoteEntryDto[]): HTMLUListElement {
 
 function renderEntry(entry: NoteEntryDto): HTMLLIElement {
   const li = document.createElement('li')
+  li.dataset.path = entry.path
+  li.dataset.dir = entry.isDirectory ? '1' : '0'
+  nodeMap.set(entry.path, li)
 
   if (entry.isDirectory) {
     const toggle = document.createElement('button')
     toggle.textContent = folderMarker(entry.path) + ' ' + entry.name
     const childUl = renderTree(entry.children)
-    childUl.hidden = false
-    li.dataset.path = entry.path
+    childUl.hidden = collapsedFolders.has(entry.path)
 
     toggle.addEventListener('click', () => {
       const collapsed = !childUl.hidden
       childUl.hidden = collapsed
+      if (collapsed) collapsedFolders.add(entry.path)
+      else collapsedFolders.delete(entry.path)
       selectedFolder = entry.path
       updateSelectedFolderDisplay()
       refreshAllMarkers()
@@ -444,6 +451,21 @@ function refreshAllMarkers(): void {
   }
 }
 
+function activeFilePath(): string | null {
+  if (!activeDocId) return null
+  return tabs.get(activeDocId)?.path ?? null
+}
+
+function refreshActiveHighlight(): void {
+  const prev = explorerTree.querySelectorAll('li[data-active="true"]')
+  for (const li of prev) li.removeAttribute('data-active')
+  const active = activeFilePath()
+  if (active) {
+    const li = nodeMap.get(active)
+    if (li) li.dataset.active = 'true'
+  }
+}
+
 async function openFile(filePath: string): Promise<void> {
   if (activeDocId) {
     const cur = tabs.get(activeDocId)
@@ -462,6 +484,7 @@ async function openFile(filePath: string): Promise<void> {
     loadActiveBuffer()
     updateDocStatus()
     renderTabs()
+    refreshActiveHighlight()
     loadBacklinks()
   } catch (e) {
     alert((e as Error).message)
@@ -517,14 +540,8 @@ vaultPathEl.addEventListener('click', () => {
   }
 })
 
-refreshBtn.addEventListener('click', () => {
-  loadExplorer()
-})
-
 const explorerPanel = document.getElementById('explorer') as HTMLDivElement
 explorerPanel.addEventListener('contextmenu', (e) => {
-  const target = e.target as HTMLElement
-  if (target.closest('#refresh-explorer')) return
   e.preventDefault()
   handleRootContextMenu()
 })
@@ -633,6 +650,269 @@ searchInput.addEventListener('keydown', (e) => {
     e.preventDefault()
     runSearch()
   }
+})
+
+function pathDirname(p: string): string {
+  const idx = Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'))
+  return idx >= 0 ? p.slice(0, idx) : ''
+}
+
+function pathBasename(p: string): string {
+  const idx = Math.max(p.lastIndexOf('/'), p.lastIndexOf('\\'))
+  return idx >= 0 ? p.slice(idx + 1) : p
+}
+
+function sortBefore(aIsDir: boolean, aName: string, bIsDir: boolean, bName: string): boolean {
+  if (aIsDir !== bIsDir) return aIsDir
+  return aName.toLowerCase() < bName.toLowerCase()
+}
+
+function insertNode(path: string, isDir: boolean): void {
+  if (nodeMap.has(path)) return
+  const parentPath = pathDirname(path)
+  const parentLi = parentPath ? nodeMap.get(parentPath) : null
+  let parentUl: HTMLUListElement
+  if (parentLi) {
+    let ul = parentLi.querySelector('ul') as HTMLUListElement | null
+    if (!ul) {
+      ul = document.createElement('ul')
+      ul.hidden = collapsedFolders.has(parentPath)
+      parentLi.appendChild(ul)
+    }
+    parentUl = ul
+  } else {
+    parentUl = explorerTree
+  }
+  const name = pathBasename(path)
+  const entry: NoteEntryDto = { path, name, isDirectory: isDir, children: [] }
+  const newLi = renderEntry(entry)
+  const siblings = Array.from(parentUl.children) as HTMLLIElement[]
+  let inserted = false
+  for (const sib of siblings) {
+    const sibPath = sib.dataset.path || ''
+    const sibName = pathBasename(sibPath)
+    const sibIsDir = sib.dataset.dir === '1'
+    if (sortBefore(isDir, name, sibIsDir, sibName)) {
+      parentUl.insertBefore(newLi, sib)
+      inserted = true
+      break
+    }
+  }
+  if (!inserted) parentUl.appendChild(newLi)
+}
+
+function removeNodeFromMap(path: string, li: HTMLLIElement): void {
+  nodeMap.delete(path)
+  const childUl = li.querySelector('ul') as HTMLUListElement | null
+  if (childUl) {
+    for (const child of Array.from(childUl.children) as HTMLLIElement[]) {
+      const childPath = child.dataset.path || ''
+      if (childPath) removeNodeFromMap(childPath, child)
+    }
+  }
+}
+
+function updateNodePath(li: HTMLLIElement, oldPrefix: string, newPrefix: string): void {
+  const oldPath = li.dataset.path || ''
+  const newPath = newPrefix + oldPath.slice(oldPrefix.length)
+  li.dataset.path = newPath
+  nodeMap.delete(oldPath)
+  nodeMap.set(newPath, li)
+  const childUl = li.querySelector('ul') as HTMLUListElement | null
+  if (childUl) {
+    for (const child of Array.from(childUl.children) as HTMLLIElement[]) {
+      updateNodePath(child, oldPrefix, newPrefix)
+    }
+  }
+}
+
+function renameDirNode(oldPath: string, newPath: string): void {
+  const li = nodeMap.get(oldPath)
+  if (!li) return
+  if (collapsedFolders.has(oldPath)) {
+    collapsedFolders.delete(oldPath)
+    collapsedFolders.add(newPath)
+  }
+  if (selectedFolder === oldPath) selectedFolder = newPath
+  updateNodePath(li, oldPath, newPath)
+  const toggle = li.querySelector('button') as HTMLButtonElement | null
+  if (toggle) {
+    const marker = collapsedFolders.has(newPath) ? '[+]' : folderMarker(newPath)
+    toggle.textContent = marker + ' ' + pathBasename(newPath)
+  }
+}
+
+async function renameFileNode(oldPath: string, newPath: string): Promise<void> {
+  const li = nodeMap.get(oldPath)
+  if (li) {
+    li.dataset.path = newPath
+    nodeMap.delete(oldPath)
+    nodeMap.set(newPath, li)
+    const span = li.querySelector('span') as HTMLSpanElement | null
+    if (span) {
+      const name = pathBasename(newPath)
+      span.textContent = name.toLowerCase().endsWith('.md') ? name.slice(0, -3) : name
+    }
+  }
+  for (const [docId, tab] of tabs) {
+    if (tab.path === oldPath) {
+      tab.path = newPath
+      try {
+        await window.api.editor.updatePath(docId, newPath)
+      } catch (e) {
+        console.warn('Failed to update doc path', (e as Error).message)
+      }
+    }
+  }
+  if (activeDocId && tabs.get(activeDocId)?.path === newPath) {
+    updateDocStatus()
+    renderTabs()
+  }
+}
+
+async function handleChange(filePath: string): Promise<void> {
+  if (!activeDocId) return
+  const tab = tabs.get(activeDocId)
+  if (!tab || tab.path !== filePath || tab.dirty) return
+  try {
+    const content = await window.api.vault.readNote(filePath)
+    tab.content = content
+    if (activeDocId && tabs.get(activeDocId)?.path === filePath) {
+      setEditorContent(content)
+    }
+  } catch (e) {
+    console.warn('Failed to reload changed note', (e as Error).message)
+  }
+}
+
+async function handleUnlink(entryPath: string, isDir: boolean): Promise<void> {
+  const wasActive = activeFilePath() === entryPath
+
+  if (isDir) {
+    const li = nodeMap.get(entryPath)
+    if (li) {
+      removeNodeFromMap(entryPath, li)
+      li.remove()
+    }
+    if (selectedFolder && (selectedFolder === entryPath || selectedFolder.startsWith(entryPath + '/') || selectedFolder.startsWith(entryPath + '\\'))) {
+      selectedFolder = pathDirname(entryPath) || vaultRootPath
+      updateSelectedFolderDisplay()
+      refreshAllMarkers()
+    }
+    return
+  }
+
+  let siblingFile: string | null = null
+  if (wasActive) {
+    const parentPath = pathDirname(entryPath)
+    const parentLi = parentPath ? nodeMap.get(parentPath) : null
+    const parentUl = parentLi ? (parentLi.querySelector('ul') as HTMLUListElement | null) : explorerTree
+    if (parentUl) {
+      const children = Array.from(parentUl.children) as HTMLLIElement[]
+      const idx = children.findIndex(c => c.dataset.path === entryPath)
+      if (idx >= 0) {
+        for (let i = idx + 1; i < children.length; i++) {
+          if (children[i].dataset.dir === '0') { siblingFile = children[i].dataset.path!; break }
+        }
+        if (!siblingFile) {
+          for (let i = idx - 1; i >= 0; i--) {
+            if (children[i].dataset.dir === '0') { siblingFile = children[i].dataset.path!; break }
+          }
+        }
+      }
+    }
+  }
+
+  const li = nodeMap.get(entryPath)
+  if (li) {
+    removeNodeFromMap(entryPath, li)
+    li.remove()
+  }
+
+  for (const [docId, tab] of Array.from(tabs)) {
+    if (tab.path === entryPath) {
+      if (tab.dirty) {
+        tab.path = null
+        tab.missing = true
+        tab.missingName = pathBasename(entryPath)
+        if (docId === activeDocId) {
+          updateDocStatus()
+          renderTabs()
+        }
+      } else {
+        await closeDoc(docId)
+      }
+    }
+  }
+
+  if (wasActive) {
+    if (siblingFile) {
+      await openFile(siblingFile)
+    } else {
+      selectedFolder = pathDirname(entryPath) || vaultRootPath
+      updateSelectedFolderDisplay()
+      refreshAllMarkers()
+    }
+  }
+}
+
+async function handleWatchEvents(batch: WatchEventDto[]): Promise<void> {
+  if (!vaultRootPath) return
+  const used = new Set<number>()
+  const renames: { old: string; new: string; isDir: boolean }[] = []
+
+  for (let i = 0; i < batch.length; i++) {
+    if (used.has(i)) continue
+    const e = batch[i]
+    if (e.type !== 'unlink' && e.type !== 'unlinkDir') continue
+    const isDir = e.type === 'unlinkDir'
+    const addType = isDir ? 'addDir' : 'add'
+    for (let j = 0; j < batch.length; j++) {
+      if (used.has(j) || j === i) continue
+      const f = batch[j]
+      if (f.type !== addType) continue
+      if (pathDirname(e.path) === pathDirname(f.path)) {
+        renames.push({ old: e.path, new: f.path, isDir })
+        used.add(i)
+        used.add(j)
+        if (isDir) {
+          for (let k = 0; k < batch.length; k++) {
+            if (used.has(k)) continue
+            const c = batch[k]
+            if (c.path === e.path || c.path.startsWith(e.path + '/') || c.path.startsWith(e.path + '\\') ||
+                c.path === f.path || c.path.startsWith(f.path + '/') || c.path.startsWith(f.path + '\\')) {
+              used.add(k)
+            }
+          }
+        }
+        break
+      }
+    }
+  }
+
+  const remaining = batch.filter((_, i) => !used.has(i))
+
+  for (const r of renames) {
+    if (r.isDir) renameDirNode(r.old, r.new)
+    else await renameFileNode(r.old, r.new)
+  }
+
+  const order: Record<string, number> = { addDir: 0, add: 1, change: 2, unlink: 3, unlinkDir: 4 }
+  remaining.sort((a, b) => (order[a.type] ?? 9) - (order[b.type] ?? 9))
+
+  for (const e of remaining) {
+    if (e.type === 'addDir') insertNode(e.path, true)
+    else if (e.type === 'add') insertNode(e.path, false)
+    else if (e.type === 'change') await handleChange(e.path)
+    else if (e.type === 'unlink') await handleUnlink(e.path, false)
+    else if (e.type === 'unlinkDir') await handleUnlink(e.path, true)
+  }
+
+  refreshActiveHighlight()
+}
+
+window.api.vault.onNoteChanged((batch) => {
+  handleWatchEvents(batch).catch((e) => console.warn('watch error', (e as Error).message))
 })
 
 editorView = createEditorView(editorHost, '', onEditorContentChange)

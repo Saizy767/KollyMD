@@ -9,6 +9,11 @@ interface NoteEntryDto {
   children: NoteEntryDto[]
 }
 
+interface WatchEventDto {
+  type: 'add' | 'unlink' | 'change' | 'addDir' | 'unlinkDir'
+  path: string
+}
+
 interface VaultApi {
   openVault: () => Promise<VaultDto | null>
   getCurrentVault: () => Promise<VaultDto | null>
@@ -18,6 +23,8 @@ interface VaultApi {
   contextMenu: (entryPath: string, kind: 'root' | 'folder' | 'file') => Promise<{ action: string } | null>
   renameEntry: (oldPath: string, newName: string) => Promise<{ path: string }>
   deleteEntry: (entryPath: string) => Promise<void>
+  readNote: (filePath: string) => Promise<string>
+  onNoteChanged: (cb: (events: WatchEventDto[]) => void) => () => void
 }
 
 interface OpenDocumentDto {
@@ -60,6 +67,7 @@ interface EditorApi {
   switchDocument: (docId: string) => Promise<void>
   getOpenDocuments: () => Promise<OpenTabsDto>
   getOpenTabs: () => Promise<string[]>
+  updatePath: (docId: string, newPath: string) => Promise<void>
 }
 
 interface BacklinkDto {
