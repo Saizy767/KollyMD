@@ -5,6 +5,19 @@ import katex from 'katex'
 
 const MATH_RE = /\$\$([\s\S]+?)\$\$|\$([^\$\n]+?)\$/g
 
+function renderKatex(latex: string, displayMode: boolean): string {
+  const originalWarn = console.warn
+  console.warn = (...args: unknown[]) => {
+    if (typeof args[0] === 'string' && args[0].startsWith('No character metrics')) return
+    originalWarn.apply(console, args)
+  }
+  try {
+    return katex.renderToString(latex, { displayMode, throwOnError: false, strict: false })
+  } finally {
+    console.warn = originalWarn
+  }
+}
+
 class MathWidget extends WidgetType {
   constructor(readonly latex: string, readonly displayMode: boolean) {
     super()
@@ -14,11 +27,7 @@ class MathWidget extends WidgetType {
     const span = document.createElement('span')
     span.className = this.displayMode ? 'cm-math cm-math-block' : 'cm-math cm-math-inline'
     try {
-      span.innerHTML = katex.renderToString(this.latex, {
-        displayMode: this.displayMode,
-        throwOnError: false,
-        strict: false
-      })
+      span.innerHTML = renderKatex(this.latex, this.displayMode)
     } catch {
       span.textContent = this.latex
       span.classList.add('cm-math-error')
