@@ -7,6 +7,8 @@
   "scripts": {
     "postinstall": "node node_modules/electron/install.js && if [ \"$(uname -s)\" = \"Darwin\" ]; then xattr -r -d com.apple.quarantine node_modules/electron/dist/Electron.app 2>/dev/null; codesign --force --deep --sign - node_modules/electron/dist/Electron.app 2>/dev/null; fi; true",
     "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.renderer.json --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "lint:deps": "node scripts/lint-usecase-deps.mjs",
     "lint:encapsulation": "node scripts/lint-module-encapsulation.mjs",
     "lint:domain": "node scripts/lint-domain-purity.mjs",
@@ -44,6 +46,7 @@
     "electron-builder": "^26.15.3",
     "typescript": "^5.4.5",
     "vite": "^8.1.5",
+    "vitest": "^4.1.11",
     "wait-on": "^9.1.0"
   }
 }

@@ -22,7 +22,10 @@ function findTsFiles(dir) {
 }
 
 const allFiles = findTsFiles(SRC)
-const domainFiles = allFiles.filter((f) => relative(SRC, f).includes('/domain/'))
+const domainFiles = allFiles.filter((f) => {
+  const rel = relative(SRC, f)
+  return rel.includes('/domain/') && !rel.endsWith('.test.ts')
+})
 const violations = []
 
 for (const file of domainFiles) {
