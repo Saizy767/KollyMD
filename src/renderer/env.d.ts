@@ -101,6 +101,10 @@ interface SearchApi {
 interface StateApi {
   getSidebarWidth: () => Promise<number | null>
   setSidebarWidth: (width: number) => Promise<void>
+  getActiveTabPath: () => Promise<string | null>
+  setActiveTabPath: (path: string | null) => Promise<void>
+  getExpandedFolders: () => Promise<string[]>
+  setExpandedFolders: (folders: string[]) => Promise<void>
 }
 
 interface Window {

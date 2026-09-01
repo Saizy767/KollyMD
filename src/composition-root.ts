@@ -45,6 +45,10 @@ import {
   SetOpenTabs,
   GetSidebarWidth,
   SetSidebarWidth,
+  GetActiveTabPath,
+  SetActiveTabPath,
+  GetExpandedFolders,
+  SetExpandedFolders,
   StateIpcHandler
 } from './modules/state'
 
@@ -57,6 +61,10 @@ export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow |
   const setOpenTabs = new SetOpenTabs(stateRepo)
   const getSidebarWidth = new GetSidebarWidth(stateRepo)
   const setSidebarWidth = new SetSidebarWidth(stateRepo)
+  const getActiveTabPath = new GetActiveTabPath(stateRepo)
+  const setActiveTabPath = new SetActiveTabPath(stateRepo)
+  const getExpandedFolders = new GetExpandedFolders(stateRepo)
+  const setExpandedFolders = new SetExpandedFolders(stateRepo)
 
   const vaultRepo = new InMemoryVaultRepository()
   const noteRepo = new FsNoteRepository()
@@ -137,7 +145,15 @@ export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow |
   const searchIpc = new SearchIpcHandler(ipcMain, searchNotes)
   searchIpc.register()
 
-  const stateIpc = new StateIpcHandler(ipcMain, getSidebarWidth, setSidebarWidth)
+  const stateIpc = new StateIpcHandler(
+    ipcMain,
+    getSidebarWidth,
+    setSidebarWidth,
+    getActiveTabPath,
+    setActiveTabPath,
+    getExpandedFolders,
+    setExpandedFolders
+  )
   stateIpc.register()
 
   app.on('before-quit', () => {
@@ -147,5 +163,7 @@ export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow |
       .filter(t => t.path !== null)
       .map(t => t.path as string)
     setOpenTabs.execute(paths)
+    const active = docRepo.getActiveDocument()
+    setActiveTabPath.execute(active?.path ?? null)
   })
 }

@@ -60,8 +60,16 @@ promptInput.addEventListener('keydown', (e) => {
 
 let vaultRootPath: string | null = null
 let selectedFolder: string | null = null
-const collapsedFolders = new Set<string>()
+const expandedFolders = new Set<string>()
 const nodeMap = new Map<string, HTMLLIElement>()
+
+let saveFoldersTimer: ReturnType<typeof setTimeout> | null = null
+function scheduleSaveExpandedFolders(): void {
+  if (saveFoldersTimer) clearTimeout(saveFoldersTimer)
+  saveFoldersTimer = setTimeout(() => {
+    window.api.state.setExpandedFolders(Array.from(expandedFolders)).catch(() => {})
+  }, 500)
+}
 
 interface TabState {
   path: string | null
@@ -324,8 +332,33 @@ async function loadCurrentVault(): Promise<void> {
       vaultRootPath = vault.rootPath
       selectedFolder = vault.rootPath
       vaultPathEl.textContent = vault.rootPath
+      try {
+        const folders = await window.api.state.getExpandedFolders()
+        expandedFolders.clear()
+        for (const f of folders) expandedFolders.add(f)
+      } catch (e) {
+        console.warn('Failed to restore expanded folders', (e as Error).message)
+      }
       await loadExplorer()
       await restoreTabs()
+      try {
+        const activePath = await window.api.state.getActiveTabPath()
+        if (activePath) {
+          for (const [docId, tab] of tabs) {
+            if (tab.path === activePath) {
+              activeDocId = docId
+              break
+            }
+          }
+          loadActiveBuffer()
+          updateDocStatus()
+          renderTabs()
+          refreshActiveHighlight()
+          loadBacklinks()
+        }
+      } catch (e) {
+        console.warn('Failed to restore active tab', (e as Error).message)
+      }
     } else {
       vaultRootPath = null
       selectedFolder = null
@@ -401,13 +434,14 @@ function renderEntry(entry: NoteEntryDto): HTMLLIElement {
     const toggle = document.createElement('button')
     toggle.textContent = folderMarker(entry.path) + ' ' + entry.name
     const childUl = renderTree(entry.children)
-    childUl.hidden = collapsedFolders.has(entry.path)
+    childUl.hidden = !expandedFolders.has(entry.path)
 
     toggle.addEventListener('click', () => {
       const collapsed = !childUl.hidden
       childUl.hidden = collapsed
-      if (collapsed) collapsedFolders.add(entry.path)
-      else collapsedFolders.delete(entry.path)
+      if (collapsed) expandedFolders.delete(entry.path)
+      else expandedFolders.add(entry.path)
+      scheduleSaveExpandedFolders()
       selectedFolder = entry.path
       updateSelectedFolderDisplay()
       refreshAllMarkers()
@@ -523,6 +557,7 @@ selectDirBtn.addEventListener('click', async () => {
       vaultRootPath = vault.rootPath
       selectedFolder = vault.rootPath
       vaultPathEl.textContent = vault.rootPath
+      expandedFolders.clear()
       await loadExplorer()
     }
   } catch (e) {
@@ -677,7 +712,7 @@ function insertNode(path: string, isDir: boolean): void {
     let ul = parentLi.querySelector('ul') as HTMLUListElement | null
     if (!ul) {
       ul = document.createElement('ul')
-      ul.hidden = collapsedFolders.has(parentPath)
+      ul.hidden = !expandedFolders.has(parentPath)
       parentLi.appendChild(ul)
     }
     parentUl = ul
@@ -730,15 +765,15 @@ function updateNodePath(li: HTMLLIElement, oldPrefix: string, newPrefix: string)
 function renameDirNode(oldPath: string, newPath: string): void {
   const li = nodeMap.get(oldPath)
   if (!li) return
-  if (collapsedFolders.has(oldPath)) {
-    collapsedFolders.delete(oldPath)
-    collapsedFolders.add(newPath)
+  if (expandedFolders.has(oldPath)) {
+    expandedFolders.delete(oldPath)
+    expandedFolders.add(newPath)
   }
   if (selectedFolder === oldPath) selectedFolder = newPath
   updateNodePath(li, oldPath, newPath)
   const toggle = li.querySelector('button') as HTMLButtonElement | null
   if (toggle) {
-    const marker = collapsedFolders.has(newPath) ? '[+]' : folderMarker(newPath)
+    const marker = !expandedFolders.has(newPath) ? '[+]' : folderMarker(newPath)
     toggle.textContent = marker + ' ' + pathBasename(newPath)
   }
 }

@@ -92,7 +92,11 @@ const api = {
   },
   state: {
     getSidebarWidth: () => request<number | null>('state:get-sidebar-width'),
-    setSidebarWidth: (width: number) => request<void>('state:set-sidebar-width', width)
+    setSidebarWidth: (width: number) => request<void>('state:set-sidebar-width', width),
+    getActiveTabPath: () => request<string | null>('state:get-active-tab-path'),
+    setActiveTabPath: (path: string | null) => request<void>('state:set-active-tab-path', path),
+    getExpandedFolders: () => request<string[]>('state:get-expanded-folders'),
+    setExpandedFolders: (folders: string[]) => request<void>('state:set-expanded-folders', folders)
   }
 }
 
