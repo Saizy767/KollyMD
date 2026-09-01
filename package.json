@@ -5,7 +5,7 @@
   "description": "Local Obsidian-like knowledge base built on Electron + TypeScript",
   "main": "dist/main/main.js",
   "scripts": {
-    "postinstall": "node node_modules/electron/install.js && xattr -r -d com.apple.quarantine node_modules/electron/dist/Electron.app 2>/dev/null; codesign --force --deep --sign - node_modules/electron/dist/Electron.app 2>/dev/null; true",
+    "postinstall": "node node_modules/electron/install.js && if [ \"$(uname -s)\" = \"Darwin\" ]; then xattr -r -d com.apple.quarantine node_modules/electron/dist/Electron.app 2>/dev/null; codesign --force --deep --sign - node_modules/electron/dist/Electron.app 2>/dev/null; fi; true",
     "typecheck": "tsc -p tsconfig.main.json --noEmit && tsc -p tsconfig.renderer.json --noEmit",
     "lint:deps": "node scripts/lint-usecase-deps.mjs",
     "lint:encapsulation": "node scripts/lint-module-encapsulation.mjs",
@@ -24,6 +24,7 @@
   },
   "dependencies": {
     "chokidar": "^3.6.0",
+    "electron-updater": "^6.8.9",
     "katex": "^0.18.1"
   },
   "devDependencies": {

@@ -57,6 +57,32 @@ npm install
 | `npm start`         | Build and launch Electron in dev mode                   |
 | `npm run dist`      | Build and package a distributable via electron-builder  |
 
+## Download & Install
+
+Prebuilt binaries are published on the [Releases page](https://github.com/Saizy767/KollyMD/releases).
+
+### Linux
+
+1. Download `KollyMD-<version>.AppImage`.
+2. Make it executable: `chmod +x KollyMD-<version>.AppImage`.
+3. Run it (double-click or `./KollyMD-<version>.AppImage`).
+
+Auto-update is enabled: the app checks GitHub Releases on startup and updates
+itself when a newer version is available.
+
+### macOS
+
+1. Download `KollyMD-<version>.dmg`.
+2. Open the `.dmg` and drag `KollyMD.app` into `/Applications`.
+3. Clear the Gatekeeper quarantine flag (the app is unsigned):
+   ```bash
+   xattr -cr /Applications/KollyMD.app
+   ```
+4. Launch `KollyMD.app`.
+
+Auto-update is **not** available on macOS (requires code signing + notarization).
+To update, download the new `.dmg` from Releases and repeat the steps above.
+
 ## Architecture
 
 KollyMD follows Clean Architecture with a strict modular structure. Every feature

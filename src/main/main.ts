@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import * as path from 'path'
+import { autoUpdater } from 'electron-updater'
 import { bootstrap } from '../composition-root'
 
 function createWindow(): void {
@@ -31,6 +32,11 @@ function createWindow(): void {
 app.whenReady().then(() => {
   bootstrap(ipcMain)
   createWindow()
+
+  if (app.isPackaged && process.platform === 'linux') {
+    autoUpdater.logger = console
+    autoUpdater.checkForUpdatesAndNotify().catch(() => {})
+  }
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
