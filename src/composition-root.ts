@@ -42,7 +42,10 @@ import {
   GetLastVault,
   SetLastVault,
   GetOpenTabs,
-  SetOpenTabs
+  SetOpenTabs,
+  GetSidebarWidth,
+  SetSidebarWidth,
+  StateIpcHandler
 } from './modules/state'
 
 export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow | null): void {
@@ -52,6 +55,8 @@ export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow |
   const setLastVault = new SetLastVault(stateRepo)
   const getOpenTabs = new GetOpenTabs(stateRepo)
   const setOpenTabs = new SetOpenTabs(stateRepo)
+  const getSidebarWidth = new GetSidebarWidth(stateRepo)
+  const setSidebarWidth = new SetSidebarWidth(stateRepo)
 
   const vaultRepo = new InMemoryVaultRepository()
   const noteRepo = new FsNoteRepository()
@@ -131,6 +136,9 @@ export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow |
 
   const searchIpc = new SearchIpcHandler(ipcMain, searchNotes)
   searchIpc.register()
+
+  const stateIpc = new StateIpcHandler(ipcMain, getSidebarWidth, setSidebarWidth)
+  stateIpc.register()
 
   app.on('before-quit', () => {
     fileWatcher.close()

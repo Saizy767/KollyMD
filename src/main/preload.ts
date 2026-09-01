@@ -89,6 +89,10 @@ const api = {
   },
   search: {
     searchNotes: (query: string) => request<unknown[]>('search:search-notes', query)
+  },
+  state: {
+    getSidebarWidth: () => request<number | null>('state:get-sidebar-width'),
+    setSidebarWidth: (width: number) => request<void>('state:set-sidebar-width', width)
   }
 }
 

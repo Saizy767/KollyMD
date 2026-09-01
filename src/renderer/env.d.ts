@@ -98,11 +98,17 @@ interface SearchApi {
   searchNotes: (query: string) => Promise<SearchResultDto[]>
 }
 
+interface StateApi {
+  getSidebarWidth: () => Promise<number | null>
+  setSidebarWidth: (width: number) => Promise<void>
+}
+
 interface Window {
   api: {
     vault: VaultApi
     editor: EditorApi
     knowledge: KnowledgeApi
     search: SearchApi
+    state: StateApi
   }
 }

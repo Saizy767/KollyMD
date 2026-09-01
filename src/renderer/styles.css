@@ -23,14 +23,36 @@ body {
 /* ---------- Sidebar ---------- */
 
 #sidebar {
-  width: 280px;
-  min-width: 280px;
+  width: var(--sidebar-width, 280px);
+  min-width: 180px;
+  max-width: 600px;
   height: 100vh;
   display: flex;
   flex-direction: column;
   background: #252526;
   border-right: 1px solid #333;
   overflow: hidden;
+  flex-shrink: 0;
+}
+
+#sidebar-resizer {
+  width: 4px;
+  height: 100vh;
+  background: #333;
+  cursor: col-resize;
+  flex-shrink: 0;
+}
+
+#sidebar-resizer:hover {
+  background: #0e639c;
+}
+
+body.dragging {
+  cursor: col-resize;
+}
+
+body.dragging #sidebar-resizer {
+  background: #0e639c;
 }
 
 #sidebar-header {

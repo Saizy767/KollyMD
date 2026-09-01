@@ -7,6 +7,7 @@ const selectDirBtn = document.getElementById('select-dir') as HTMLButtonElement
 const vaultPathEl = document.getElementById('vault-path') as HTMLSpanElement
 const explorerTree = document.getElementById('explorer-tree') as HTMLUListElement
 const explorerStatus = document.getElementById('explorer-status') as HTMLSpanElement
+const sidebarResizer = document.getElementById('sidebar-resizer') as HTMLDivElement
 
 const docStatus = document.getElementById('doc-status') as HTMLSpanElement
 const editorHost = document.getElementById('editor-host') as HTMLDivElement
@@ -919,3 +920,46 @@ editorView = createEditorView(editorHost, '', onEditorContentChange)
 
 updateDocStatus()
 loadCurrentVault()
+
+const SIDEBAR_MIN = 180
+const SIDEBAR_MAX = 600
+const SIDEBAR_DEFAULT = 280
+
+const sidebarSheet = new CSSStyleSheet()
+sidebarSheet.replaceSync(':root { --sidebar-width: ' + SIDEBAR_DEFAULT + 'px }')
+document.adoptedStyleSheets = [...document.adoptedStyleSheets, sidebarSheet]
+
+let currentSidebarWidth = SIDEBAR_DEFAULT
+
+function setSidebarWidth(width: number): void {
+  currentSidebarWidth = Math.max(SIDEBAR_MIN, Math.min(SIDEBAR_MAX, width))
+  sidebarSheet.replaceSync(':root { --sidebar-width: ' + currentSidebarWidth + 'px }')
+}
+
+window.api.state.getSidebarWidth().then((width) => {
+  if (width !== null) setSidebarWidth(width)
+}).catch(() => {})
+
+sidebarResizer.addEventListener('mousedown', (e) => {
+  e.preventDefault()
+  const startX = e.clientX
+  const startWidth = currentSidebarWidth
+  document.body.classList.add('dragging')
+
+  const onMove = (ev: MouseEvent): void => {
+    setSidebarWidth(startWidth + (ev.clientX - startX))
+  }
+  const onUp = (): void => {
+    document.removeEventListener('mousemove', onMove)
+    document.removeEventListener('mouseup', onUp)
+    document.body.classList.remove('dragging')
+    window.api.state.setSidebarWidth(currentSidebarWidth).catch(() => {})
+  }
+  document.addEventListener('mousemove', onMove)
+  document.addEventListener('mouseup', onUp)
+})
+
+sidebarResizer.addEventListener('dblclick', () => {
+  setSidebarWidth(SIDEBAR_DEFAULT)
+  window.api.state.setSidebarWidth(SIDEBAR_DEFAULT).catch(() => {})
+})
