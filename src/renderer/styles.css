@@ -115,6 +115,7 @@ body.dragging #sidebar-resizer {
   margin: 4px 0 0 0;
   padding: 0;
   list-style: none;
+  cursor: default;
 }
 
 #explorer-status {
@@ -198,7 +199,7 @@ body.dragging #sidebar-resizer {
 #explorer-tree ul {
   list-style: none;
   margin: 0;
-  padding-left: 12px;
+  padding-left: 20px;
 }
 
 #explorer-tree li {
@@ -209,17 +210,19 @@ body.dragging #sidebar-resizer {
   background: none;
   border: none;
   color: #d4d4d4;
-  cursor: pointer;
+  cursor: default;
   font: inherit;
   padding: 2px 4px;
   text-align: left;
   display: flex;
   align-items: center;
   gap: 4px;
+  width: 100%;
 }
 
 #explorer-tree button:hover {
   color: #fff;
+  background: #2f2f30;
 }
 
 #explorer-tree button .folder-arrow {
@@ -229,19 +232,15 @@ body.dragging #sidebar-resizer {
   pointer-events: none;
 }
 
-#explorer-tree button[data-selected="true"] .folder-name {
-  color: #0e639c;
-  font-weight: bold;
-}
-
 #explorer-tree span {
-  cursor: pointer;
+  cursor: default;
   padding: 2px 4px;
-  display: inline-block;
+  display: block;
 }
 
 #explorer-tree span:hover {
   color: #fff;
+  background: #2f2f30;
 }
 
 #explorer-tree li[data-active="true"] > span {
