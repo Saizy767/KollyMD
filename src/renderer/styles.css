@@ -23,29 +23,49 @@ body {
 /* ---------- Sidebar ---------- */
 
 #sidebar {
-  width: 280px;
-  min-width: 280px;
+  width: var(--sidebar-width, 280px);
+  min-width: 180px;
+  max-width: 600px;
   height: 100vh;
   display: flex;
   flex-direction: column;
   background: #252526;
   border-right: 1px solid #333;
   overflow: hidden;
+  flex-shrink: 0;
+}
+
+#sidebar-resizer {
+  width: 4px;
+  height: 100vh;
+  background: #333;
+  cursor: col-resize;
+  flex-shrink: 0;
+}
+
+#sidebar-resizer:hover {
+  background: #0e639c;
+}
+
+body.dragging {
+  cursor: col-resize;
+}
+
+body.dragging #sidebar-resizer {
+  background: #0e639c;
 }
 
 #sidebar-header {
   padding: 8px;
   border-bottom: 1px solid #333;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
 }
 
 #vault-path {
-  font-size: 12px;
-  color: #888;
-  word-break: break-all;
-  cursor: pointer;
+  font-size: 18px;
+  color: #ddd;
+  font-weight: 600;
+  margin: 0;
+  user-select: none;
 }
 
 #search-bar {
@@ -95,12 +115,52 @@ body {
   margin: 4px 0 0 0;
   padding: 0;
   list-style: none;
+  cursor: default;
 }
 
 #explorer-status {
   font-size: 11px;
   color: #888;
-  padding-top: 4px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+#sidebar-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-top: 1px solid #333;
+  flex-shrink: 0;
+}
+
+#sidebar-footer #select-dir {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#selected-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+}
+
+#selected-label {
+  font-size: 11px;
+  color: #888;
+  flex-shrink: 0;
 }
 
 #search-results {
@@ -139,7 +199,7 @@ body {
 #explorer-tree ul {
   list-style: none;
   margin: 0;
-  padding-left: 12px;
+  padding-left: 20px;
 }
 
 #explorer-tree li {
@@ -150,24 +210,42 @@ body {
   background: none;
   border: none;
   color: #d4d4d4;
-  cursor: pointer;
+  cursor: default;
   font: inherit;
   padding: 2px 4px;
   text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
 }
 
 #explorer-tree button:hover {
   color: #fff;
+  background: #2f2f30;
+}
+
+#explorer-tree button .folder-arrow {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  pointer-events: none;
 }
 
 #explorer-tree span {
-  cursor: pointer;
+  cursor: default;
   padding: 2px 4px;
-  display: inline-block;
+  display: block;
 }
 
 #explorer-tree span:hover {
   color: #fff;
+  background: #2f2f30;
+}
+
+#explorer-tree li[data-active="true"] > span {
+  color: #7ab7ff;
+  font-weight: bold;
 }
 
 /* ---------- Main area ---------- */
@@ -411,12 +489,12 @@ button:disabled {
 }
 
 #explorer > button,
-#sidebar-header button {
+#sidebar-footer button {
   background: #3a3a3a;
 }
 
 #explorer > button:hover:not(:disabled),
-#sidebar-header button:hover:not(:disabled) {
+#sidebar-footer button:hover:not(:disabled) {
   background: #4a4a4a;
 }
 

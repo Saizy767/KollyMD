@@ -19,7 +19,10 @@ export class JsonStateRepository implements StateRepository {
       return new WorkspaceState(
         data.lastVaultPath ?? null,
         data.recentFiles ?? [],
-        data.openTabs ?? []
+        data.openTabs ?? [],
+        data.sidebarWidth ?? null,
+        data.activeTabPath ?? null,
+        data.expandedFolders ?? []
       )
     } catch (e) {
       this.logger.warn('Failed to load state, returning empty', { filePath: this.filePath, error: (e as Error).message })
@@ -38,7 +41,10 @@ export class JsonStateRepository implements StateRepository {
         {
           lastVaultPath: state.lastVaultPath,
           recentFiles: state.recentFiles,
-          openTabs: state.openTabs
+          openTabs: state.openTabs,
+          sidebarWidth: state.sidebarWidth,
+          activeTabPath: state.activeTabPath,
+          expandedFolders: state.expandedFolders
         },
         null,
         2

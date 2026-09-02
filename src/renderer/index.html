@@ -8,8 +8,7 @@
 <body>
   <aside id="sidebar">
     <div id="sidebar-header">
-      <button id="select-dir">Select Directory</button>
-      <span id="vault-path">No vault selected</span>
+      <h2 id="vault-path">No vault selected</h2>
     </div>
     <div id="search-bar">
       <input id="search" type="text" placeholder="Search notes...">
@@ -17,12 +16,18 @@
       <span id="search-status"></span>
     </div>
     <div id="explorer">
-      <button id="refresh-explorer">Refresh</button>
       <ul id="explorer-tree"></ul>
-      <span id="explorer-status"></span>
     </div>
     <ul id="search-results"></ul>
+    <div id="sidebar-footer">
+      <button id="select-dir" title="Select Directory">...</button>
+      <div id="selected-group">
+        <span id="selected-label">Selected:</span>
+        <span id="explorer-status"></span>
+      </div>
+    </div>
   </aside>
+  <div id="sidebar-resizer"></div>
   <main id="main">
     <div id="tabs"><ul id="tabs-list"></ul></div>
     <div id="editor-bar">

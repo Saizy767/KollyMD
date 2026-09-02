@@ -6,6 +6,8 @@ import type { CreateNote } from '../../application/use-cases/CreateNote'
 import type { CreateFolder } from '../../application/use-cases/CreateFolder'
 import type { RenameEntry } from '../../application/use-cases/RenameEntry'
 import type { DeleteEntry } from '../../application/use-cases/DeleteEntry'
+import type { ReadNote } from '../../application/use-cases/ReadNote'
+import type { FileWatcher } from '../../domain/interfaces/FileWatcher'
 import type { SetLastVault } from '../../../state'
 import type { VaultDto, NoteEntryDto, CreatedNoteDto, RenamedEntryDto } from '../../application/dto'
 
@@ -19,8 +21,20 @@ export class VaultIpcHandler {
     private readonly createFolder: CreateFolder,
     private readonly renameEntry: RenameEntry,
     private readonly deleteEntry: DeleteEntry,
+    private readonly readNote: ReadNote,
+    private readonly fileWatcher: FileWatcher,
+    private readonly getMainWindow: () => BrowserWindow | null,
     private readonly setLastVault: SetLastVault
   ) {}
+
+  private startWatcher(rootPath: string): void {
+    this.fileWatcher.start(rootPath, (batch) => {
+      const win = this.getMainWindow()
+      if (win && !win.isDestroyed()) {
+        win.webContents.send('vault:note-changed', batch.map(e => ({ type: e.type, path: e.path })))
+      }
+    })
+  }
 
   register(): void {
     this.ipcMain.on('vault:open-vault', async (event, payload: { reqId: string }) => {
@@ -38,6 +52,7 @@ export class VaultIpcHandler {
 
         const dto: VaultDto = this.openVault.execute(result.filePaths[0])
         this.setLastVault.execute(dto.rootPath)
+        this.startWatcher(dto.rootPath)
 
         event.reply('kolly:reply', { reqId, data: dto })
       } catch (e) {
@@ -67,6 +82,10 @@ export class VaultIpcHandler {
       const { reqId } = payload
       try {
         const dto: NoteEntryDto[] = this.listNotes.execute()
+        if (!this.fileWatcher.isRunning()) {
+          const vault = this.getCurrentVault.execute()
+          if (vault) this.startWatcher(vault.rootPath)
+        }
         event.reply('kolly:reply', { reqId, data: dto })
       } catch (e) {
         dialog.showMessageBox({
@@ -188,6 +207,20 @@ export class VaultIpcHandler {
             type: 'error',
             message: (e as Error).message
           })
+          event.reply('kolly:reply', { reqId, error: true })
+        }
+      }
+    )
+
+    this.ipcMain.on(
+      'vault:read-note',
+      (event, payload: { reqId: string; args: [string] }) => {
+        const { reqId, args } = payload
+        const [filePath] = args
+        try {
+          const content = this.readNote.execute(filePath)
+          event.reply('kolly:reply', { reqId, data: content })
+        } catch (e) {
           event.reply('kolly:reply', { reqId, error: true })
         }
       }

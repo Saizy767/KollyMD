@@ -13,10 +13,11 @@ The primary focus of KollyMD is functional correctness. The frontend (Electron r
 - Allowed: flexbox/grid layouts, margins/padding, colors, border-radius, basic transitions. Keep it minimal and semantic.
 - The single `styles.css` is the ONLY allowed CSS surface; everything else stays unstyled semantic HTML.
 
-### 2. Visual Assets — text and Unicode only
-- NO SVG, NO images (PNG/JPG/etc.), NO custom fonts (`@font-face`, web fonts).
+### 2. Visual Assets — text, Unicode, and SVG icons
+- SVG icons ARE allowed as lightweight UI icons (e.g. folder expand/collapse arrows). SVG icon files live in `src/renderer/assets/` and are imported via Vite (`import url from './assets/*.svg'`). Recolor SVG `fill` to match the theme (e.g. `#d4d4d4`); do NOT use `currentColor` with `<img>`.
+- NO raster images (PNG/JPG/etc.), NO custom fonts (`@font-face`, web fonts).
 - Use plain text and basic unstyled HTML elements to display data (standard `<table>`, `<ul>`, `<li>`, `<button>`, `<input>`).
-- Unicode symbols ARE allowed as lightweight icons: `×` (close), `▸`/`▾` (expand/collapse), `●` (active marker), `⚑` (backlink/flag), etc. Do not use them as decorative emoji elsewhere.
+- Unicode symbols ARE also allowed as lightweight icons: `×` (close), `●` (active marker), `⚑` (backlink/flag), etc. Do not use them as decorative emoji elsewhere.
 
 ### 3. Native Dialogs (Electron)
 - Use **exclusively** native OS / browser dialogs to display errors, notifications, and confirmation requests.
@@ -47,6 +48,6 @@ System and form states are shown with text plus the basic `disabled`/`hidden` at
 - Add a second CSS file or split styles across files — everything lives in `src/renderer/styles.css`.
 - Use `<style>` tags or inline `style=` attributes anywhere.
 - Suggest using UI component libraries (e.g., Material UI, Radix, Headless UI) or CSS frameworks (Tailwind, Bootstrap).
-- Use SVG, PNG, JPG, icon fonts, or `@font-face`.
+- Use PNG, JPG, icon fonts, or `@font-face`. (SVG icons in `src/renderer/assets/` ARE allowed — see section 2.)
 - Create custom dropdowns, selects, or modals instead of using native HTML/OS solutions.
 - Waste tokens or time generating elaborate CSS animations, glassmorphism, or decorative effects.
