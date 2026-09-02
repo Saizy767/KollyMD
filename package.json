@@ -1,6 +1,6 @@
 {
   "name": "kollymd",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "Local Obsidian-like knowledge base built on Electron + TypeScript",
   "main": "dist/main/main.js",
