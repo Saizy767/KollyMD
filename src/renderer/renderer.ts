@@ -4,7 +4,11 @@ import { createEditorView } from './editor/cm-setup'
 import type { EditorView } from '@codemirror/view'
 
 const selectDirBtn = document.getElementById('select-dir') as HTMLButtonElement
-const vaultPathEl = document.getElementById('vault-path') as HTMLSpanElement
+const vaultPathEl = document.getElementById('vault-path') as HTMLHeadingElement
+
+function basename(p: string): string {
+  return p.split(/[/\\]/).filter(Boolean).pop() || p
+}
 const explorerTree = document.getElementById('explorer-tree') as HTMLUListElement
 const explorerStatus = document.getElementById('explorer-status') as HTMLSpanElement
 const sidebarResizer = document.getElementById('sidebar-resizer') as HTMLDivElement
@@ -331,7 +335,8 @@ async function loadCurrentVault(): Promise<void> {
     if (vault) {
       vaultRootPath = vault.rootPath
       selectedFolder = vault.rootPath
-      vaultPathEl.textContent = vault.rootPath
+      vaultPathEl.textContent = basename(vault.rootPath)
+      vaultPathEl.title = vault.rootPath
       try {
         const folders = await window.api.state.getExpandedFolders()
         expandedFolders.clear()
@@ -363,10 +368,12 @@ async function loadCurrentVault(): Promise<void> {
       vaultRootPath = null
       selectedFolder = null
       vaultPathEl.textContent = 'No vault selected'
+      vaultPathEl.title = ''
       updateSelectedFolderDisplay()
     }
   } catch (e) {
     vaultPathEl.textContent = '[Error: ' + (e as Error).message + ']'
+    vaultPathEl.title = ''
   }
 }
 
@@ -556,7 +563,8 @@ selectDirBtn.addEventListener('click', async () => {
     if (vault) {
       vaultRootPath = vault.rootPath
       selectedFolder = vault.rootPath
-      vaultPathEl.textContent = vault.rootPath
+      vaultPathEl.textContent = basename(vault.rootPath)
+      vaultPathEl.title = vault.rootPath
       expandedFolders.clear()
       await loadExplorer()
     }

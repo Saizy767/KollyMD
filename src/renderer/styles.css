@@ -64,9 +64,10 @@ body.dragging #sidebar-resizer {
 }
 
 #vault-path {
-  font-size: 12px;
-  color: #888;
-  word-break: break-all;
+  font-size: 15px;
+  color: #ddd;
+  font-weight: 600;
+  margin: 0;
   cursor: pointer;
 }
 

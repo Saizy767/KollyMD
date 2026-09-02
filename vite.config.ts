@@ -5,10 +5,7 @@ export default defineConfig({
   base: './',
   build: {
     outDir: '../../dist/renderer',
-    emptyOutDir: true,
-    rollupOptions: {
-      input: 'src/renderer/index.html'
-    }
+    emptyOutDir: true
   },
   server: {
     port: 5173
