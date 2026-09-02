@@ -58,17 +58,14 @@ body.dragging #sidebar-resizer {
 #sidebar-header {
   padding: 8px;
   border-bottom: 1px solid #333;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
 }
 
 #vault-path {
-  font-size: 15px;
+  font-size: 18px;
   color: #ddd;
   font-weight: 600;
   margin: 0;
-  cursor: pointer;
+  user-select: none;
 }
 
 #search-bar {
@@ -123,7 +120,46 @@ body.dragging #sidebar-resizer {
 #explorer-status {
   font-size: 11px;
   color: #888;
-  padding-top: 4px;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+#sidebar-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-top: 1px solid #333;
+  flex-shrink: 0;
+}
+
+#sidebar-footer #select-dir {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#selected-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+}
+
+#selected-label {
+  font-size: 11px;
+  color: #888;
+  flex-shrink: 0;
 }
 
 #search-results {
@@ -439,12 +475,12 @@ button:disabled {
 }
 
 #explorer > button,
-#sidebar-header button {
+#sidebar-footer button {
   background: #3a3a3a;
 }
 
 #explorer > button:hover:not(:disabled),
-#sidebar-header button:hover:not(:disabled) {
+#sidebar-footer button:hover:not(:disabled) {
   background: #4a4a4a;
 }
 

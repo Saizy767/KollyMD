@@ -11,6 +11,8 @@ function basename(p: string): string {
 }
 const explorerTree = document.getElementById('explorer-tree') as HTMLUListElement
 const explorerStatus = document.getElementById('explorer-status') as HTMLSpanElement
+const selectedGroup = document.getElementById('selected-group') as HTMLDivElement
+const selectedLabel = document.getElementById('selected-label') as HTMLSpanElement
 const sidebarResizer = document.getElementById('sidebar-resizer') as HTMLDivElement
 
 const docStatus = document.getElementById('doc-status') as HTMLSpanElement
@@ -107,14 +109,59 @@ function onEditorContentChange(doc: string): void {
   }
 }
 
+let displayPath = ''
+let measureCtx: CanvasRenderingContext2D | null = null
+
+function measureText(text: string): number {
+  if (!measureCtx) {
+    const canvas = document.createElement('canvas')
+    measureCtx = canvas.getContext('2d')
+  }
+  if (!measureCtx) return text.length * 7
+  const style = getComputedStyle(explorerStatus)
+  measureCtx.font = style.fontSize + ' ' + style.fontFamily
+  return measureCtx.measureText(text).width
+}
+
+function computeTruncatedPath(p: string, maxWidth: number): string {
+  if (!p || maxWidth <= 0) return ''
+  const sep = p.includes('\\') ? '\\' : '/'
+  const parts = p.split(/[/\\]/).filter(Boolean)
+  if (parts.length === 0) return p
+  const truncParts = parts.map(s => (s.length > 20 ? s.slice(0, 18) + '...' : s))
+  const leadingSep = p.startsWith('/') ? '/' : ''
+  for (let keep = truncParts.length; keep >= 1; keep--) {
+    const child = truncParts.slice(-keep)
+    const collapsed = parts.length - keep
+    const candidate =
+      collapsed > 0 ? '..' + sep + child.join(sep) : leadingSep + child.join(sep)
+    if (measureText(candidate) <= maxWidth) return candidate
+  }
+  return '..' + sep + truncParts[truncParts.length - 1]
+}
+
+function renderTruncatedPath(): void {
+  if (!displayPath) {
+    explorerStatus.textContent = ''
+    explorerStatus.title = ''
+    return
+  }
+  const available = selectedGroup.clientWidth - selectedLabel.offsetWidth - 6
+  explorerStatus.textContent = computeTruncatedPath(displayPath, available)
+  explorerStatus.title = displayPath
+}
+
+new ResizeObserver(() => renderTruncatedPath()).observe(selectedGroup)
+
 function updateSelectedFolderDisplay(): void {
   if (selectedFolder) {
-    explorerStatus.textContent = 'Selected: ' + selectedFolder
+    displayPath = selectedFolder
   } else if (vaultRootPath) {
-    explorerStatus.textContent = 'Selected: ' + vaultRootPath + ' (root)'
+    displayPath = vaultRootPath + ' (root)'
   } else {
-    explorerStatus.textContent = 'No vault selected'
+    displayPath = ''
   }
+  renderTruncatedPath()
 }
 
 function folderMarker(entryPath: string): string {
@@ -556,7 +603,6 @@ async function closeDoc(docId: string): Promise<void> {
 }
 
 selectDirBtn.addEventListener('click', async () => {
-  selectDirBtn.textContent = 'Loading...'
   selectDirBtn.disabled = true
   try {
     const vault = await window.api.vault.openVault()
@@ -571,16 +617,7 @@ selectDirBtn.addEventListener('click', async () => {
   } catch (e) {
     alert((e as Error).message)
   } finally {
-    selectDirBtn.textContent = 'Select Directory'
     selectDirBtn.disabled = false
-  }
-})
-
-vaultPathEl.addEventListener('click', () => {
-  if (vaultRootPath) {
-    selectedFolder = vaultRootPath
-    updateSelectedFolderDisplay()
-    refreshAllMarkers()
   }
 })
 

@@ -24,9 +24,16 @@ function createWindow(): void {
     console.error(`[render-process-gone] ${JSON.stringify(details)}`)
   })
 
-  win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html')).catch(err => {
-    console.error(`[loadFile rejected] ${err}`)
-  })
+  const isDev = process.env.NODE_ENV === 'development'
+  if (isDev) {
+    win.loadURL('http://localhost:5173').catch(err => {
+      console.error(`[loadURL rejected] ${err}`)
+    })
+  } else {
+    win.loadFile(path.join(__dirname, '..', 'renderer', 'index.html')).catch(err => {
+      console.error(`[loadFile rejected] ${err}`)
+    })
+  }
 }
 
 app.whenReady().then(() => {

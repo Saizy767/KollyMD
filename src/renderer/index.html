@@ -8,7 +8,6 @@
 <body>
   <aside id="sidebar">
     <div id="sidebar-header">
-      <button id="select-dir">Select Directory</button>
       <h2 id="vault-path">No vault selected</h2>
     </div>
     <div id="search-bar">
@@ -18,9 +17,15 @@
     </div>
     <div id="explorer">
       <ul id="explorer-tree"></ul>
-      <span id="explorer-status"></span>
     </div>
     <ul id="search-results"></ul>
+    <div id="sidebar-footer">
+      <button id="select-dir" title="Select Directory">...</button>
+      <div id="selected-group">
+        <span id="selected-label">Selected:</span>
+        <span id="explorer-status"></span>
+      </div>
+    </div>
   </aside>
   <div id="sidebar-resizer"></div>
   <main id="main">
