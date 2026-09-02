@@ -2,6 +2,8 @@
 
 import { createEditorView } from './editor/cm-setup'
 import type { EditorView } from '@codemirror/view'
+import rightArrowUrl from './assets/right-arrow.svg'
+import bottomArrowUrl from './assets/bottom-arrow.svg'
 
 const selectDirBtn = document.getElementById('select-dir') as HTMLButtonElement
 const vaultPathEl = document.getElementById('vault-path') as HTMLHeadingElement
@@ -164,8 +166,19 @@ function updateSelectedFolderDisplay(): void {
   renderTruncatedPath()
 }
 
-function folderMarker(entryPath: string): string {
-  return entryPath === selectedFolder ? '[*]' : '[-]'
+function setFolderButtonContent(btn: HTMLButtonElement, name: string, collapsed: boolean, selected: boolean): void {
+  btn.replaceChildren()
+  const img = document.createElement('img')
+  img.className = 'folder-arrow'
+  img.src = collapsed ? rightArrowUrl : bottomArrowUrl
+  img.alt = collapsed ? 'Expand' : 'Collapse'
+  const span = document.createElement('span')
+  span.className = 'folder-name'
+  span.textContent = name
+  btn.appendChild(img)
+  btn.appendChild(span)
+  if (selected) btn.dataset.selected = 'true'
+  else delete btn.dataset.selected
 }
 
 function ensureMdExtension(name: string): string {
@@ -486,17 +499,22 @@ function renderEntry(entry: NoteEntryDto): HTMLLIElement {
 
   if (entry.isDirectory) {
     const toggle = document.createElement('button')
-    toggle.textContent = folderMarker(entry.path) + ' ' + entry.name
+    const collapsed = !expandedFolders.has(entry.path)
+    setFolderButtonContent(toggle, entry.name, collapsed, entry.path === selectedFolder)
     const childUl = renderTree(entry.children)
-    childUl.hidden = !expandedFolders.has(entry.path)
+    childUl.hidden = collapsed
 
     toggle.addEventListener('click', () => {
       const collapsed = !childUl.hidden
       childUl.hidden = collapsed
-      if (collapsed) expandedFolders.delete(entry.path)
-      else expandedFolders.add(entry.path)
+      if (collapsed) {
+        expandedFolders.delete(entry.path)
+        if (selectedFolder === entry.path) selectedFolder = vaultRootPath
+      } else {
+        expandedFolders.add(entry.path)
+        selectedFolder = entry.path
+      }
       scheduleSaveExpandedFolders()
-      selectedFolder = entry.path
       updateSelectedFolderDisplay()
       refreshAllMarkers()
     })
@@ -534,9 +552,8 @@ function refreshAllMarkers(): void {
     const childUl = li.querySelector('ul') as HTMLUListElement | null
     if (!childUl) continue
     const entryPath = (li.dataset.path as string) || ''
-    const name = btn.textContent?.split(' ').slice(1).join(' ') || ''
-    const marker = childUl.hidden ? '[+]' : folderMarker(entryPath)
-    btn.textContent = marker + ' ' + name
+    const name = pathBasename(entryPath)
+    setFolderButtonContent(btn, name, childUl.hidden, entryPath === selectedFolder)
   }
 }
 
@@ -749,6 +766,7 @@ function sortBefore(aIsDir: boolean, aName: string, bIsDir: boolean, bName: stri
 }
 
 function insertNode(path: string, isDir: boolean): void {
+  if (path === vaultRootPath) return
   if (nodeMap.has(path)) return
   const parentPath = pathDirname(path)
   const parentLi = parentPath ? nodeMap.get(parentPath) : null
@@ -818,8 +836,7 @@ function renameDirNode(oldPath: string, newPath: string): void {
   updateNodePath(li, oldPath, newPath)
   const toggle = li.querySelector('button') as HTMLButtonElement | null
   if (toggle) {
-    const marker = !expandedFolders.has(newPath) ? '[+]' : folderMarker(newPath)
-    toggle.textContent = marker + ' ' + pathBasename(newPath)
+    setFolderButtonContent(toggle, pathBasename(newPath), !expandedFolders.has(newPath), newPath === selectedFolder)
   }
 }
 

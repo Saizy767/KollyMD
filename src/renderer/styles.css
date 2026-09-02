@@ -213,10 +213,25 @@ body.dragging #sidebar-resizer {
   font: inherit;
   padding: 2px 4px;
   text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 #explorer-tree button:hover {
   color: #fff;
+}
+
+#explorer-tree button .folder-arrow {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+#explorer-tree button[data-selected="true"] .folder-name {
+  color: #0e639c;
+  font-weight: bold;
 }
 
 #explorer-tree span {

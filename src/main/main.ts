@@ -1,7 +1,21 @@
-import { app, BrowserWindow, ipcMain } from 'electron'
+import { app, BrowserWindow, ipcMain, session } from 'electron'
 import * as path from 'path'
 import { autoUpdater } from 'electron-updater'
 import { bootstrap } from '../composition-root'
+
+function setCspPolicy(isDev: boolean): void {
+  const csp = isDev
+    ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' ws://localhost:5173 http://localhost:5173; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:"
+    : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:"
+  session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
+    callback({
+      responseHeaders: {
+        ...details.responseHeaders,
+        'Content-Security-Policy': [csp]
+      }
+    })
+  })
+}
 
 function createWindow(): void {
   const win = new BrowserWindow({
@@ -17,8 +31,8 @@ function createWindow(): void {
   win.webContents.on('did-fail-load', (_e, code, desc, url) => {
     console.error(`[did-fail-load] code=${code} desc=${desc} url=${url}`)
   })
-  win.webContents.on('console-message', (_e, level, message, line, sourceId) => {
-    console.log(`[renderer:${level}] ${message} (${sourceId}:${line})`)
+  win.webContents.on('console-message', (e) => {
+    console.log(`[renderer:${e.level}] ${e.message} (${e.sourceId}:${e.lineNumber})`)
   })
   win.webContents.on('render-process-gone', (_e, details) => {
     console.error(`[render-process-gone] ${JSON.stringify(details)}`)
@@ -37,6 +51,8 @@ function createWindow(): void {
 }
 
 app.whenReady().then(() => {
+  const isDev = process.env.NODE_ENV === 'development'
+  setCspPolicy(isDev)
   bootstrap(ipcMain, () => BrowserWindow.getAllWindows()[0] ?? null)
   createWindow()
 
