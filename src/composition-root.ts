@@ -27,6 +27,7 @@ import {
   SwitchDocument,
   GetOpenDocuments,
   UpdateDocumentPath,
+  ReorderDocuments,
   EditorIpcHandler
 } from './modules/editor'
 import {
@@ -88,6 +89,7 @@ export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow |
   const switchDocument = new SwitchDocument(docRepo)
   const getOpenDocuments = new GetOpenDocuments(docRepo)
   const updateDocumentPath = new UpdateDocumentPath(docRepo)
+  const reorderDocuments = new ReorderDocuments(docRepo)
 
   const findBacklinks = new FindBacklinks(vaultRepo, noteRepo)
   const findNotesByTag = new FindNotesByTag(vaultRepo, noteRepo)
@@ -128,6 +130,7 @@ export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow |
     switchDocument,
     getOpenDocuments,
     updateDocumentPath,
+    reorderDocuments,
     getOpenTabs,
     getCurrentVault
   )

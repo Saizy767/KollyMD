@@ -68,32 +68,121 @@ body.dragging #sidebar-resizer {
   user-select: none;
 }
 
-#search-bar {
+#command-bar {
   padding: 8px;
   border-bottom: 1px solid #333;
   display: flex;
-  flex-direction: column;
+  justify-content: center;
+  flex-direction: row;
   gap: 6px;
+  cursor: default;
+  position: relative;
 }
 
-#search {
-  width: 100%;
-  padding: 6px 8px;
-  background: #1e1e1e;
-  border: 1px solid #3c3c3c;
-  border-radius: 4px;
+.cmd-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 6px;
+  padding: 20px;
+  background: #3a3a3a;
+  border: none;
+  cursor: default;
+  flex-shrink: 0;
+  position: relative;
+}
+
+.cmd-btn.cmd-dragging {
+  position: absolute;
+  width: 70px;
+  height: 70px;
+  left: var(--cmd-drag-x);
+  top: var(--cmd-drag-y);
+  z-index: 10;
+  animation: none;
+}
+
+.cmd-btn:hover:not(:disabled) {
+  background: #4a4a4a;
+}
+
+@keyframes cmd-jiggle {
+  0%, 100% { transform: rotate(-2.5deg); }
+  50% { transform: rotate(2.5deg); }
+}
+
+#command-bar[data-edit="true"] .cmd-btn {
+  animation: cmd-jiggle 0.32s ease-in-out infinite alternate;
+}
+
+#command-bar[data-edit="true"] .cmd-btn:nth-child(3) { animation-delay: 0.08s; }
+#command-bar[data-edit="true"] .cmd-btn:nth-child(4) { animation-delay: 0.16s; }
+#command-bar[data-edit="true"] .cmd-btn:nth-child(5) { animation-delay: 0.04s; }
+#command-bar[data-edit="true"] .cmd-btn:nth-child(6) { animation-delay: 0.12s; }
+#command-bar[data-edit="true"] .cmd-btn:nth-child(7) { animation-delay: 0.2s; }
+
+.cmd-delete {
+  display: none;
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #0e639c;
+  color: #fff;
+  font-size: 14px;
+  line-height: 18px;
+  text-align: center;
+  cursor: default;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+}
+
+#command-bar[data-edit="true"] .cmd-delete {
+  display: flex;
+}
+
+.cmd-add-zone {
+  flex: 1 1 auto;
+  min-width: 0;
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+}
+
+.cmd-spacer {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.cmd-add {
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  padding: 0;
+  background: #3a3a3a;
+  border: none;
+  cursor: default;
   color: #d4d4d4;
-  font-size: 13px;
+  font-size: 18px;
+  line-height: 1;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.1s;
 }
 
-#search:focus {
-  outline: none;
-  border-color: #0e639c;
+.cmd-add-zone:hover .cmd-add {
+  opacity: 1;
+  pointer-events: auto;
 }
 
-#search-status {
-  font-size: 11px;
-  color: #888;
+.cmd-add:hover {
+  background: #4a4a4a;
+}
+
+#command-bar[data-full="true"] .cmd-add {
+  display: none;
 }
 
 #explorer {
@@ -161,37 +250,6 @@ body.dragging #sidebar-resizer {
   font-size: 11px;
   color: #888;
   flex-shrink: 0;
-}
-
-#search-results {
-  max-height: 40%;
-  overflow: auto;
-  margin: 0;
-  padding: 0 8px;
-  list-style: none;
-  border-top: 1px solid #333;
-}
-
-#search-results li {
-  padding: 6px 4px;
-  border-bottom: 1px solid #2d2d2d;
-  cursor: pointer;
-}
-
-#search-results li:hover {
-  background: #2a2d2e;
-}
-
-#search-results strong {
-  color: #d4d4d4;
-  font-size: 12px;
-}
-
-#search-results div {
-  color: #888;
-  font-size: 11px;
-  margin-top: 2px;
-  word-break: break-word;
 }
 
 /* ---------- Tree styling ---------- */
@@ -496,10 +554,6 @@ button:disabled {
 #explorer > button:hover:not(:disabled),
 #sidebar-footer button:hover:not(:disabled) {
   background: #4a4a4a;
-}
-
-#search-btn {
-  align-self: flex-start;
 }
 
 /* ---------- Prompt dialog ---------- */

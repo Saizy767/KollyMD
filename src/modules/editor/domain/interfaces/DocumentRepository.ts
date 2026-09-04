@@ -8,4 +8,5 @@ export interface DocumentRepository {
   setActive(id: string): void
   markDirty(id: string, dirty: boolean): void
   setPath(id: string, path: string): void
+  reorder(ids: string[]): void
 }

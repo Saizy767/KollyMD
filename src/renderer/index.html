@@ -10,15 +10,18 @@
     <div id="sidebar-header">
       <h2 id="vault-path">No vault selected</h2>
     </div>
-    <div id="search-bar">
-      <input id="search" type="text" placeholder="Search notes...">
-      <button id="search-btn">Search</button>
-      <span id="search-status"></span>
+    <div id="command-bar">
+      <div class="cmd-spacer"></div>
+      <button class="cmd-btn" title=""><span class="cmd-delete">−</span></button>
+      <button class="cmd-btn" title=""><span class="cmd-delete">−</span></button>
+      <button class="cmd-btn" title=""><span class="cmd-delete">−</span></button>
+      <div class="cmd-add-zone">
+        <button class="cmd-add" title="Add command">+</button>
+      </div>
     </div>
     <div id="explorer">
       <ul id="explorer-tree"></ul>
     </div>
-    <ul id="search-results"></ul>
     <div id="sidebar-footer">
       <button id="select-dir" title="Select Directory">...</button>
       <div id="selected-group">

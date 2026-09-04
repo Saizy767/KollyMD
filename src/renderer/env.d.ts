@@ -73,6 +73,7 @@ interface EditorApi {
   getOpenDocuments: () => Promise<OpenTabsDto>
   getOpenTabs: () => Promise<string[]>
   updatePath: (docId: string, newPath: string) => Promise<void>
+  reorderDocuments: (ids: string[]) => Promise<void>
 }
 
 interface BacklinkDto {

@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, session } from 'electron'
 import * as path from 'path'
+import * as chokidar from 'chokidar'
 import { autoUpdater } from 'electron-updater'
 import { bootstrap } from '../composition-root'
 
@@ -55,6 +56,17 @@ app.whenReady().then(() => {
   setCspPolicy(isDev)
   bootstrap(ipcMain, () => BrowserWindow.getAllWindows()[0] ?? null)
   createWindow()
+
+  if (isDev) {
+    let restarting = false
+    const distRoot = path.join(__dirname, '..')
+    chokidar.watch(distRoot, { ignored: /renderer/, ignoreInitial: true }).on('change', () => {
+      if (restarting) return
+      restarting = true
+      app.relaunch()
+      app.exit()
+    })
+  }
 
   if (app.isPackaged && process.platform === 'linux') {
     autoUpdater.logger = console

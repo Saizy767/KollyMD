@@ -75,7 +75,9 @@ const api = {
       request<{ tabs: unknown[]; activeId: string | null }>('editor:get-open-documents'),
     getOpenTabs: () => request<string[]>('editor:get-open-tabs'),
     updatePath: (docId: string, newPath: string) =>
-      request<void>('editor:update-path', docId, newPath)
+      request<void>('editor:update-path', docId, newPath),
+    reorderDocuments: (ids: string[]) =>
+      request<void>('editor:reorder-documents', ids)
   },
   knowledge: {
     findBacklinks: (noteName: string) =>
