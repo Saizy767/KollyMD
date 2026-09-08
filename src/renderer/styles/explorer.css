@@ -1,0 +1,73 @@
+#explorer {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 8px;
+  gap: 6px;
+}
+
+#explorer > button {
+  align-self: flex-start;
+}
+
+#explorer-tree {
+  flex: 1;
+  overflow: auto;
+  margin: 4px 0 0 0;
+  padding: 0;
+  list-style: none;
+  cursor: default;
+}
+
+#explorer-tree ul {
+  list-style: none;
+  margin: 0;
+  padding-left: 20px;
+}
+
+#explorer-tree li {
+  margin: 1px 0;
+}
+
+#explorer-tree button {
+  background: none;
+  border: none;
+  color: #d4d4d4;
+  cursor: default;
+  font: inherit;
+  padding: 2px 4px;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+}
+
+#explorer-tree button:hover {
+  color: #fff;
+  background: #2f2f30;
+}
+
+#explorer-tree button .folder-arrow {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  pointer-events: none;
+}
+
+#explorer-tree span {
+  cursor: default;
+  padding: 2px 4px;
+  display: block;
+}
+
+#explorer-tree span:hover {
+  color: #fff;
+  background: #2f2f30;
+}
+
+#explorer-tree li[data-active="true"] > span {
+  color: #7ab7ff;
+  font-weight: bold;
+}

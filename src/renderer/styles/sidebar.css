@@ -1,0 +1,90 @@
+#sidebar {
+  width: var(--sidebar-width, 280px);
+  min-width: 180px;
+  max-width: 600px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: #252526;
+  border-right: 1px solid #333;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+#sidebar-resizer {
+  width: 4px;
+  height: 100vh;
+  background: #333;
+  cursor: col-resize;
+  flex-shrink: 0;
+}
+
+#sidebar-resizer:hover {
+  background: #0e639c;
+}
+
+body.dragging {
+  cursor: col-resize;
+}
+
+body.dragging #sidebar-resizer {
+  background: #0e639c;
+}
+
+#sidebar-header {
+  padding: 8px;
+  border-bottom: 1px solid #333;
+}
+
+#vault-path {
+  font-size: 18px;
+  color: #ddd;
+  font-weight: 600;
+  margin: 0;
+  user-select: none;
+}
+
+#sidebar-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-top: 1px solid #333;
+  flex-shrink: 0;
+}
+
+#sidebar-footer #select-dir {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#selected-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  flex: 1 1 auto;
+  justify-content: flex-end;
+}
+
+#selected-label {
+  font-size: 11px;
+  color: #888;
+  flex-shrink: 0;
+}
+
+#explorer-status {
+  font-size: 11px;
+  color: #888;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  min-width: 0;
+  flex: 0 1 auto;
+}
