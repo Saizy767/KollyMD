@@ -5,6 +5,8 @@ import type { GetActiveTabPath } from '../../application/use-cases/GetActiveTabP
 import type { SetActiveTabPath } from '../../application/use-cases/SetActiveTabPath'
 import type { GetExpandedFolders } from '../../application/use-cases/GetExpandedFolders'
 import type { SetExpandedFolders } from '../../application/use-cases/SetExpandedFolders'
+import type { GetCommandBarButtons } from '../../application/use-cases/GetCommandBarButtons'
+import type { SetCommandBarButtons } from '../../application/use-cases/SetCommandBarButtons'
 
 export class StateIpcHandler {
   constructor(
@@ -14,7 +16,9 @@ export class StateIpcHandler {
     private readonly getActiveTabPath: GetActiveTabPath,
     private readonly setActiveTabPath: SetActiveTabPath,
     private readonly getExpandedFolders: GetExpandedFolders,
-    private readonly setExpandedFolders: SetExpandedFolders
+    private readonly setExpandedFolders: SetExpandedFolders,
+    private readonly getCommandBarButtons: GetCommandBarButtons,
+    private readonly setCommandBarButtons: SetCommandBarButtons
   ) {}
 
   register(): void {
@@ -83,6 +87,30 @@ export class StateIpcHandler {
         const [folders] = args
         try {
           this.setExpandedFolders.execute(folders)
+          event.reply('kolly:reply', { reqId, data: null })
+        } catch (e) {
+          event.reply('kolly:reply', { reqId, error: true })
+        }
+      }
+    )
+
+    this.ipcMain.on('state:get-command-bar-buttons', (event, payload: { reqId: string }) => {
+      const { reqId } = payload
+      try {
+        const buttons = this.getCommandBarButtons.execute()
+        event.reply('kolly:reply', { reqId, data: buttons })
+      } catch (e) {
+        event.reply('kolly:reply', { reqId, error: true })
+      }
+    })
+
+    this.ipcMain.on(
+      'state:set-command-bar-buttons',
+      (event, payload: { reqId: string; args: [string[]] }) => {
+        const { reqId, args } = payload
+        const [buttonIds] = args
+        try {
+          this.setCommandBarButtons.execute(buttonIds)
           event.reply('kolly:reply', { reqId, data: null })
         } catch (e) {
           event.reply('kolly:reply', { reqId, error: true })

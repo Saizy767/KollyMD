@@ -57,6 +57,14 @@ interface TabDto {
   dirty: boolean
 }
 
+interface ButtonTemplateDto {
+  id: string
+  name: string
+  description: string
+  iconPath: string
+  action: string
+}
+
 interface OpenTabsDto {
   tabs: TabDto[]
   activeId: string | null
@@ -74,6 +82,7 @@ interface EditorApi {
   getOpenTabs: () => Promise<string[]>
   updatePath: (docId: string, newPath: string) => Promise<void>
   reorderDocuments: (ids: string[]) => Promise<void>
+  getAvailableButtonTemplates: () => Promise<{ templates: ButtonTemplateDto[] }>
 }
 
 interface BacklinkDto {
@@ -111,6 +120,8 @@ interface StateApi {
   setActiveTabPath: (path: string | null) => Promise<void>
   getExpandedFolders: () => Promise<string[]>
   setExpandedFolders: (folders: string[]) => Promise<void>
+  getCommandBarButtons: () => Promise<string[]>
+  setCommandBarButtons: (buttonIds: string[]) => Promise<void>
 }
 
 interface Window {

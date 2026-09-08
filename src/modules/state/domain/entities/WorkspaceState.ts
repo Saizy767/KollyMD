@@ -5,6 +5,7 @@ export class WorkspaceState {
     public openTabs: string[] = [],
     public sidebarWidth: number | null = null,
     public activeTabPath: string | null = null,
-    public expandedFolders: string[] = []
+    public expandedFolders: string[] = [],
+    public commandBarButtons: string[] = []
   ) {}
 }

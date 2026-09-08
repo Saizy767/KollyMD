@@ -77,7 +77,9 @@ const api = {
     updatePath: (docId: string, newPath: string) =>
       request<void>('editor:update-path', docId, newPath),
     reorderDocuments: (ids: string[]) =>
-      request<void>('editor:reorder-documents', ids)
+      request<void>('editor:reorder-documents', ids),
+    getAvailableButtonTemplates: () =>
+      request<{ templates: unknown[] }>('editor:get-available-button-templates')
   },
   knowledge: {
     findBacklinks: (noteName: string) =>
@@ -98,7 +100,9 @@ const api = {
     getActiveTabPath: () => request<string | null>('state:get-active-tab-path'),
     setActiveTabPath: (path: string | null) => request<void>('state:set-active-tab-path', path),
     getExpandedFolders: () => request<string[]>('state:get-expanded-folders'),
-    setExpandedFolders: (folders: string[]) => request<void>('state:set-expanded-folders', folders)
+    setExpandedFolders: (folders: string[]) => request<void>('state:set-expanded-folders', folders),
+    getCommandBarButtons: () => request<string[]>('state:get-command-bar-buttons'),
+    setCommandBarButtons: (buttonIds: string[]) => request<void>('state:set-command-bar-buttons', buttonIds)
   }
 }
 

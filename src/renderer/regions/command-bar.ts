@@ -1,18 +1,33 @@
+import { showButtonTemplateDialog, type ButtonTemplateChoice } from '../ui/button-template-dialog'
+import searchIconUrl from '../assets/search-icon.svg'
+import llmIconUrl from '../assets/llm-icon.svg'
+import clusterTreeIconUrl from '../assets/cluster-tree-icon.svg'
+import filesystemIconUrl from '../assets/filesystem-icon.svg'
+
 const commandBar = document.getElementById('command-bar') as HTMLDivElement
 const cmdAddBtn = document.querySelector('.cmd-add') as HTMLButtonElement
 const cmdAddZone = document.querySelector('.cmd-add-zone') as HTMLDivElement
 const MAX_CMD_BUTTONS = 6
-let cmdCounter = 1
 
-function createCmdButton(): HTMLButtonElement {
+const iconPathMap: Record<string, string> = {
+  'assets/search-icon.svg': searchIconUrl,
+  'assets/llm-icon.svg': llmIconUrl,
+  'assets/cluster-tree-icon.svg': clusterTreeIconUrl,
+  'assets/filesystem-icon.svg': filesystemIconUrl
+}
+
+function createCmdButton(templateId?: string, iconSrc?: string): HTMLButtonElement {
   const btn = document.createElement('button')
   btn.className = 'cmd-btn'
   btn.title = ''
-  const idx = document.createElement('span')
-  idx.className = 'cmd-index'
-  idx.textContent = String(cmdCounter)
-  btn.appendChild(idx)
-  cmdCounter++
+  if (templateId) btn.dataset.templateId = templateId
+  if (iconSrc) {
+    const icon = document.createElement('img')
+    icon.className = 'cmd-btn-icon'
+    icon.src = iconSrc
+    icon.alt = ''
+    btn.appendChild(icon)
+  }
   const del = document.createElement('span')
   del.className = 'cmd-delete'
   del.textContent = '−'
@@ -146,18 +161,44 @@ function endCmdDrag(): void {
 }
 
 export function initCommandBar(): void {
-  cmdAddBtn.addEventListener('click', () => {
+  cmdAddBtn.addEventListener('click', async () => {
     const count = commandBar.querySelectorAll('.cmd-btn').length
     if (count >= MAX_CMD_BUTTONS) return
-    commandBar.insertBefore(createCmdButton(), cmdAddZone)
-    refreshCmdBarFullState()
+    try {
+      const result = await window.api.editor.getAvailableButtonTemplates()
+      const existingIds = Array.from(commandBar.querySelectorAll('.cmd-btn')).map(
+        (b) => (b as HTMLElement).dataset.templateId ?? ''
+      )
+      const choice = await showButtonTemplateDialog(result.templates as ButtonTemplateChoice[], existingIds)
+      if (!choice) return
+      const iconSrc = iconPathMap[choice.iconPath]
+      commandBar.insertBefore(createCmdButton(choice.id, iconSrc), cmdAddZone)
+      refreshCmdBarFullState()
+      const ids = Array.from(commandBar.querySelectorAll('.cmd-btn')).map(
+        (b) => (b as HTMLElement).dataset.templateId ?? 'default'
+      )
+      try {
+        await window.api.state.setCommandBarButtons(ids)
+      } catch {
+        // ignore persistence error
+      }
+    } catch (e) {
+      alert((e as Error).message)
+    }
   })
 
   refreshCmdBarFullState()
+
+  const iconMap: Record<string, string> = {
+    'search': searchIconUrl,
+    'llm-dialog': llmIconUrl,
+    'cluster-tree': clusterTreeIconUrl,
+    'filesystem': filesystemIconUrl
+  }
   commandBar.querySelectorAll('.cmd-btn').forEach((btn) => {
-    const idx = btn.querySelector('.cmd-index')
-    if (idx) idx.textContent = String(cmdCounter)
-    cmdCounter++
+    const tplId = (btn as HTMLElement).dataset.templateId
+    const icon = btn.querySelector('.cmd-btn-icon') as HTMLImageElement | null
+    if (tplId && icon && iconMap[tplId]) icon.src = iconMap[tplId]
   })
 
   commandBar.addEventListener('mousedown', (e) => {

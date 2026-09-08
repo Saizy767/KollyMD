@@ -18,6 +18,7 @@ import {
 } from './modules/vault'
 import {
   InMemoryDocumentRepository,
+  StaticButtonTemplateRepository,
   OpenDocument,
   SaveDocument,
   SaveAsDocument,
@@ -28,6 +29,7 @@ import {
   GetOpenDocuments,
   UpdateDocumentPath,
   ReorderDocuments,
+  GetAvailableButtonTemplates,
   EditorIpcHandler
 } from './modules/editor'
 import {
@@ -50,6 +52,8 @@ import {
   SetActiveTabPath,
   GetExpandedFolders,
   SetExpandedFolders,
+  GetCommandBarButtons,
+  SetCommandBarButtons,
   StateIpcHandler
 } from './modules/state'
 
@@ -66,6 +70,8 @@ export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow |
   const setActiveTabPath = new SetActiveTabPath(stateRepo)
   const getExpandedFolders = new GetExpandedFolders(stateRepo)
   const setExpandedFolders = new SetExpandedFolders(stateRepo)
+  const getCommandBarButtons = new GetCommandBarButtons(stateRepo)
+  const setCommandBarButtons = new SetCommandBarButtons(stateRepo)
 
   const vaultRepo = new InMemoryVaultRepository()
   const noteRepo = new FsNoteRepository()
@@ -90,6 +96,9 @@ export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow |
   const getOpenDocuments = new GetOpenDocuments(docRepo)
   const updateDocumentPath = new UpdateDocumentPath(docRepo)
   const reorderDocuments = new ReorderDocuments(docRepo)
+
+  const buttonTemplateRepo = new StaticButtonTemplateRepository()
+  const getAvailableButtonTemplates = new GetAvailableButtonTemplates(buttonTemplateRepo)
 
   const findBacklinks = new FindBacklinks(vaultRepo, noteRepo)
   const findNotesByTag = new FindNotesByTag(vaultRepo, noteRepo)
@@ -131,6 +140,7 @@ export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow |
     getOpenDocuments,
     updateDocumentPath,
     reorderDocuments,
+    getAvailableButtonTemplates,
     getOpenTabs,
     getCurrentVault
   )
@@ -155,7 +165,9 @@ export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow |
     getActiveTabPath,
     setActiveTabPath,
     getExpandedFolders,
-    setExpandedFolders
+    setExpandedFolders,
+    getCommandBarButtons,
+    setCommandBarButtons
   )
   stateIpc.register()
 

@@ -15,7 +15,7 @@ button:hover:not(:disabled) {
 button:disabled {
   background: #3a3a3a;
   color: #666;
-  cursor: not-allowed;
+  cursor: default;
 }
 
 #explorer > button,
