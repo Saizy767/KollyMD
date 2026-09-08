@@ -20,8 +20,8 @@ that the project is in a working state and report results. You do NOT edit code.
 3. Run `npm run lint:deps` (Rule 1: max 3 dependencies per use case).
 4. Run `npm run lint:encapsulation` (Rule 2: no deep cross-module imports, use index.ts).
 5. Run `npm run lint:domain` (Rule 3: domain layer must not import infrastructure/application or external packages).
-6. Run `npm run lint:style-css` (single styles.css, no <style> tags, no inline styles).
-7. Run `npm run lint:style-assets` (no SVG/images/custom fonts in renderer).
+6. Run `npm run lint:style-css` (single CSS surface: styles.css or styles/ folder, no <style> tags, no inline styles).
+7. Run `npm run lint:style-assets` (no raster images/fonts; SVG only in src/renderer/assets/).
 8. Run `npm run lint:style-deps` (no UI libraries or CSS frameworks in package.json).
 9. If all pass, report: "Validation passed: typecheck OK, build OK, tests OK, arch lint OK, style lint OK."
 10. If any fail, report the specific errors (file paths, line numbers, error
@@ -33,8 +33,8 @@ that the project is in a working state and report results. You do NOT edit code.
 - `npm run lint:encapsulation` — Rule 2: no deep cross-module imports, use index.ts
 - `npm run lint:domain` — Rule 3: domain layer must not import infrastructure/application or external packages
 - `npm run lint:arch` — all 3 architectural rules combined (shorthand for the above)
-- `npm run lint:style-css` — single styles.css, no <style> tags, no inline styles
-- `npm run lint:style-assets` — no SVG/images/custom fonts in renderer
+- `npm run lint:style-css` — single CSS surface (styles.css or styles/ folder), no <style> tags, no inline styles
+- `npm run lint:style-assets` — no raster images/fonts; SVG only in src/renderer/assets/
 - `npm run lint:style-deps` — no UI libraries or CSS frameworks in package.json
 - `npm run lint:style` — all 3 style rules combined
 

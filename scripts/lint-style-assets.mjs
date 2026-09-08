@@ -1,12 +1,13 @@
 import { fileURLToPath } from 'node:url'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
-import { join, relative, dirname } from 'node:path'
+import { join, relative, dirname, sep } from 'node:path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
 const RENDERER = join(ROOT, 'src', 'renderer')
+const ASSETS_DIR = join(RENDERER, 'assets')
 
-const IMAGE_EXTS = ['.svg', '.png', '.jpg', '.jpeg', '.gif', '.ico', '.bmp', '.webp', '.avif']
+const RASTER_EXTS = ['.png', '.jpg', '.jpeg', '.gif', '.ico', '.bmp', '.webp', '.avif']
 const FONT_EXTS = ['.woff', '.woff2', '.ttf', '.otf', '.eot']
 
 function findFiles(dir, exts) {
@@ -26,9 +27,15 @@ function findFiles(dir, exts) {
 
 const violations = []
 
-const imageFiles = findFiles(RENDERER, IMAGE_EXTS)
-for (const f of imageFiles) {
-  violations.push(`${relative(ROOT, f)}: image/asset file (text and Unicode only)`)
+const rasterFiles = findFiles(RENDERER, RASTER_EXTS)
+for (const f of rasterFiles) {
+  violations.push(`${relative(ROOT, f)}: raster image file (text, Unicode, and SVG icons only)`)
+}
+
+const svgFiles = findFiles(RENDERER, ['.svg'])
+for (const f of svgFiles) {
+  if (f.startsWith(ASSETS_DIR + sep)) continue
+  violations.push(`${relative(ROOT, f)}: SVG outside assets/ (SVG icons must live in src/renderer/assets/)`)
 }
 
 const fontFiles = findFiles(RENDERER, FONT_EXTS)
@@ -59,5 +66,5 @@ if (violations.length > 0) {
   for (const v of violations) console.error(`  ${v}`)
   process.exit(1)
 } else {
-  console.log('Style assets passed: no SVG/images/fonts in renderer.')
+  console.log('Style assets passed: no raster images/fonts in renderer; SVG only in assets/.')
 }

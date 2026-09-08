@@ -70,7 +70,7 @@ All decisions MUST comply with `architecture.md` and `style.md`. Key resolutions
 | Markdown rendering | **CM6 decorations** (inline WYSIWYG). `marked` + `MarkedMarkdownRenderer` + `knowledge:render` IPC → REMOVED in Phase B2d. | replaces marked-based preview |
 | Wiki-links in editor | CM6 inline clickable decorations (`<a data-wiki>`), always clickable regardless of cursor | user choice |
 | Tags in editor | CM6 inline clickable decorations (`<a data-tag>`), always clickable | consistent with wiki-links |
-| CSS policy | Allowed in single file `src/renderer/styles.css` (no `<style>`, no inline, no frameworks) | user choice — relaxed from zero-CSS after MVP prototype |
+| CSS policy | Single surface: `src/renderer/styles.css` OR `src/renderer/styles/` folder with `index.css` entry `@import`-ing partials (current layout). No `<style>`, no inline, no frameworks. | user choice — relaxed to allow `@import` split |
 | Icons | SVG icons in `src/renderer/assets/` (imported via Vite) + Unicode symbols (`×` `●` `⚑`); NO raster images/fonts | style.md |
 | Layout target | 2-column (sidebar | editor). No separate preview pane — CM6 IS the preview. | changed from 3-column after CM6 decision |
 | Theme | Dark minimalist (dark bg, light text, one accent) | Obsidian-like |
@@ -282,7 +282,7 @@ KollyMD/
 
 ## 10. Compliance Checklist (run before each commit)
 
-- CSS only in `src/renderer/styles.css` — NO `<style>` tags, NO inline `style=`
+- CSS only in `src/renderer/styles.css` or `src/renderer/styles/` folder — NO stray `.css` elsewhere, NO `<style>` tags, NO inline `style=`
 - No PNG / JPG / icon fonts / `@font-face` (SVG icons in `src/renderer/assets/` ARE allowed; Unicode symbols ARE allowed)
 - No UI component libraries or CSS frameworks (Tailwind, Bootstrap, Material, Radix, etc.)
 - No `import` of `fs`/`path`/`electron`/`chokidar` in `domain/` or `application/` (renderer MAY import `@codemirror/*` — bundled by Vite)
