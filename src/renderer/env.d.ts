@@ -109,8 +109,17 @@ interface SearchResultDto {
   matchCount: number
 }
 
+interface SearchEntryDto {
+  path: string
+  name: string
+  kind: 'file' | 'folder'
+  snippet: string | null
+  matchCount: number
+}
+
 interface SearchApi {
   searchNotes: (query: string) => Promise<SearchResultDto[]>
+  searchEntries: (query: string) => Promise<SearchEntryDto[]>
 }
 
 interface StateApi {

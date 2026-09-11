@@ -92,7 +92,8 @@ const api = {
       request<{ path: string }>('knowledge:create-note-from-link', noteName)
   },
   search: {
-    searchNotes: (query: string) => request<unknown[]>('search:search-notes', query)
+    searchNotes: (query: string) => request<unknown[]>('search:search-notes', query),
+    searchEntries: (query: string) => request<unknown[]>('search:search-entries', query)
   },
   state: {
     getSidebarWidth: () => request<number | null>('state:get-sidebar-width'),

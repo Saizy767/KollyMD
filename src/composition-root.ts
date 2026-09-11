@@ -39,7 +39,7 @@ import {
   CreateNoteFromLink,
   KnowledgeIpcHandler
 } from './modules/knowledge'
-import { SearchNotes, SearchIpcHandler } from './modules/search'
+import { SearchNotes, SearchIpcHandler, SearchEntries, SearchEntriesIpcHandler } from './modules/search'
 import {
   JsonStateRepository,
   GetLastVault,
@@ -106,6 +106,7 @@ export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow |
   const createNoteFromLink = new CreateNoteFromLink(vaultRepo, noteRepo)
 
   const searchNotes = new SearchNotes(vaultRepo, noteRepo)
+  const searchEntries = new SearchEntries(vaultRepo, noteRepo)
 
   const lastVaultPath = getLastVault.execute()
   if (lastVaultPath) {
@@ -157,6 +158,9 @@ export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow |
 
   const searchIpc = new SearchIpcHandler(ipcMain, searchNotes)
   searchIpc.register()
+
+  const searchEntriesIpc = new SearchEntriesIpcHandler(ipcMain, searchEntries)
+  searchEntriesIpc.register()
 
   const stateIpc = new StateIpcHandler(
     ipcMain,
