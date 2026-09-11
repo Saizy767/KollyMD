@@ -17,6 +17,7 @@ class FakeNoteRepo implements NoteRepository {
   writeNote() {}
   findByNoteName() { return null }
   readAllNotes() { return [] }
+  listFolders() { return [] }
   renameEntry(oldPath: string, newName: string) {
     this.renamed = { oldPath, newName }
     return oldPath.replace(/[^/\\]+$/, newName)

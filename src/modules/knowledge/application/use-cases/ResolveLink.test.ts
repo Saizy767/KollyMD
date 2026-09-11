@@ -17,6 +17,7 @@ class FakeNoteRepo implements NoteRepository {
   writeNote() {}
   findByNoteName() { return this.foundPath }
   readAllNotes() { return [] }
+  listFolders() { return [] }
   renameEntry() { return '' }
   deleteEntry() {}
 }

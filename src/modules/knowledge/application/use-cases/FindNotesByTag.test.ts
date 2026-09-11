@@ -11,6 +11,7 @@ class FakeVaultRepo implements VaultRepository {
 class FakeNoteRepo implements NoteRepository {
   notes: NoteContent[] = []
   readAllNotes(): NoteContent[] { return this.notes }
+  listFolders() { return [] }
   listEntries() { return [] }
   createNote() { return '' }
   createFolder() { return '' }

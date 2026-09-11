@@ -20,6 +20,7 @@ class FakeNoteRepo implements NoteRepository {
   writeNote() {}
   findByNoteName() { return null }
   readAllNotes() { return [] }
+  listFolders() { return [] }
   renameEntry() { return '' }
   deleteEntry() {}
 }

@@ -1,5 +1,6 @@
 export { SearchResult } from './domain/entities/SearchResult'
 export { SearchEntry } from './domain/entities/SearchEntry'
 export { SearchNotes } from './application/use-cases/SearchNotes'
+export { SearchEntries } from './application/use-cases/SearchEntries'
 export type { SearchResultDto, SearchEntryDto } from './application/dto'
 export { SearchIpcHandler } from './infrastructure/ipc-handlers/SearchIpcHandler'
