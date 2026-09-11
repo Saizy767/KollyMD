@@ -9,6 +9,7 @@ import type { TabsApi } from './regions/tabs'
 import { initExplorer } from './regions/explorer'
 import type { ExplorerApi } from './regions/explorer'
 import { initSearchPanel } from './regions/search-panel'
+import { initLlmDialog } from './regions/llm-dialog'
 
 initSidebar()
 
@@ -35,8 +36,9 @@ explorerApi = initExplorer({
 })
 
 const searchPanelApi = initSearchPanel({ tabsApi })
+const llmDialogApi = initLlmDialog({})
 
-initCommandBar({ searchPanelApi })
+initCommandBar({ searchPanelApi, llmDialogApi })
 
 tabsApi.updateDocStatus()
 explorerApi.loadCurrentVault()

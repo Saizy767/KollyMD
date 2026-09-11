@@ -105,11 +105,11 @@ const api = {
     getCommandBarButtons: () => request<string[]>('state:get-command-bar-buttons'),
     setCommandBarButtons: (buttonIds: string[]) => request<void>('state:set-command-bar-buttons', buttonIds),
     getSearchPanelState: () =>
-      request<{ activePanel: 'explorer' | 'search'; expandedSearchFolders: string[]; lastSearchQuery: string }>(
+      request<{ activePanel: 'explorer' | 'search' | 'llm-dialog'; expandedSearchFolders: string[]; lastSearchQuery: string }>(
         'state:get-search-panel-state'
       ),
     setSearchPanelState: (panelState: {
-      activePanel: 'explorer' | 'search'
+      activePanel: 'explorer' | 'search' | 'llm-dialog'
       expandedSearchFolders: string[]
       lastSearchQuery: string
     }) => request<void>('state:set-search-panel-state', panelState)

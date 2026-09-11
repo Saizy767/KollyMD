@@ -4,6 +4,7 @@
 @import "./command-bar.css";
 @import "./explorer.css";
 @import "./search-panel.css";
+@import "./llm-dialog.css";
 @import "./tabs.css";
 @import "./editor.css";
 @import "./prompt.css";

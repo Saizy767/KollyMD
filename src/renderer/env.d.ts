@@ -123,7 +123,7 @@ interface SearchApi {
 }
 
 interface SearchPanelStateDto {
-  activePanel: 'explorer' | 'search'
+  activePanel: 'explorer' | 'search' | 'llm-dialog'
   expandedSearchFolders: string[]
   lastSearchQuery: string
 }
