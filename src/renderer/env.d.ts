@@ -122,6 +122,12 @@ interface SearchApi {
   searchEntries: (query: string) => Promise<SearchEntryDto[]>
 }
 
+interface SearchPanelStateDto {
+  activePanel: 'explorer' | 'search'
+  expandedSearchFolders: string[]
+  lastSearchQuery: string
+}
+
 interface StateApi {
   getSidebarWidth: () => Promise<number | null>
   setSidebarWidth: (width: number) => Promise<void>
@@ -131,6 +137,8 @@ interface StateApi {
   setExpandedFolders: (folders: string[]) => Promise<void>
   getCommandBarButtons: () => Promise<string[]>
   setCommandBarButtons: (buttonIds: string[]) => Promise<void>
+  getSearchPanelState: () => Promise<SearchPanelStateDto>
+  setSearchPanelState: (panelState: SearchPanelStateDto) => Promise<void>
 }
 
 interface Window {

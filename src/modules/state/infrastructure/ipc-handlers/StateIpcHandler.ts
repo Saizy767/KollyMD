@@ -7,6 +7,9 @@ import type { GetExpandedFolders } from '../../application/use-cases/GetExpanded
 import type { SetExpandedFolders } from '../../application/use-cases/SetExpandedFolders'
 import type { GetCommandBarButtons } from '../../application/use-cases/GetCommandBarButtons'
 import type { SetCommandBarButtons } from '../../application/use-cases/SetCommandBarButtons'
+import type { GetSearchPanelState } from '../../application/use-cases/GetSearchPanelState'
+import type { SetSearchPanelState } from '../../application/use-cases/SetSearchPanelState'
+import type { SearchPanelStateDto } from '../../application/use-cases/GetSearchPanelState'
 
 export class StateIpcHandler {
   constructor(
@@ -18,7 +21,9 @@ export class StateIpcHandler {
     private readonly getExpandedFolders: GetExpandedFolders,
     private readonly setExpandedFolders: SetExpandedFolders,
     private readonly getCommandBarButtons: GetCommandBarButtons,
-    private readonly setCommandBarButtons: SetCommandBarButtons
+    private readonly setCommandBarButtons: SetCommandBarButtons,
+    private readonly getSearchPanelState: GetSearchPanelState,
+    private readonly setSearchPanelState: SetSearchPanelState
   ) {}
 
   register(): void {
@@ -111,6 +116,30 @@ export class StateIpcHandler {
         const [buttonIds] = args
         try {
           this.setCommandBarButtons.execute(buttonIds)
+          event.reply('kolly:reply', { reqId, data: null })
+        } catch (e) {
+          event.reply('kolly:reply', { reqId, error: true })
+        }
+      }
+    )
+
+    this.ipcMain.on('state:get-search-panel-state', (event, payload: { reqId: string }) => {
+      const { reqId } = payload
+      try {
+        const panelState = this.getSearchPanelState.execute()
+        event.reply('kolly:reply', { reqId, data: panelState })
+      } catch (e) {
+        event.reply('kolly:reply', { reqId, error: true })
+      }
+    })
+
+    this.ipcMain.on(
+      'state:set-search-panel-state',
+      (event, payload: { reqId: string; args: [SearchPanelStateDto] }) => {
+        const { reqId, args } = payload
+        const [panelState] = args
+        try {
+          this.setSearchPanelState.execute(panelState)
           event.reply('kolly:reply', { reqId, data: null })
         } catch (e) {
           event.reply('kolly:reply', { reqId, error: true })

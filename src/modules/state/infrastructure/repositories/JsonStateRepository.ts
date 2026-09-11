@@ -16,7 +16,7 @@ export class JsonStateRepository implements StateRepository {
     try {
       const raw = fs.readFileSync(this.filePath, 'utf-8')
       const data = JSON.parse(raw)
-      return new WorkspaceState(
+      const state = new WorkspaceState(
         data.lastVaultPath ?? null,
         data.recentFiles ?? [],
         data.openTabs ?? [],
@@ -24,6 +24,10 @@ export class JsonStateRepository implements StateRepository {
         data.activeTabPath ?? null,
         data.expandedFolders ?? []
       )
+      state.activePanel = data.activePanel === 'search' ? 'search' : 'explorer'
+      state.expandedSearchFolders = Array.isArray(data.expandedSearchFolders) ? data.expandedSearchFolders : []
+      state.lastSearchQuery = typeof data.lastSearchQuery === 'string' ? data.lastSearchQuery : ''
+      return state
     } catch (e) {
       this.logger.warn('Failed to load state, returning empty', { filePath: this.filePath, error: (e as Error).message })
       return new WorkspaceState()
@@ -44,7 +48,10 @@ export class JsonStateRepository implements StateRepository {
           openTabs: state.openTabs,
           sidebarWidth: state.sidebarWidth,
           activeTabPath: state.activeTabPath,
-          expandedFolders: state.expandedFolders
+          expandedFolders: state.expandedFolders,
+          activePanel: state.activePanel,
+          expandedSearchFolders: state.expandedSearchFolders,
+          lastSearchQuery: state.lastSearchQuery
         },
         null,
         2

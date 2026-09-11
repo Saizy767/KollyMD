@@ -103,7 +103,16 @@ const api = {
     getExpandedFolders: () => request<string[]>('state:get-expanded-folders'),
     setExpandedFolders: (folders: string[]) => request<void>('state:set-expanded-folders', folders),
     getCommandBarButtons: () => request<string[]>('state:get-command-bar-buttons'),
-    setCommandBarButtons: (buttonIds: string[]) => request<void>('state:set-command-bar-buttons', buttonIds)
+    setCommandBarButtons: (buttonIds: string[]) => request<void>('state:set-command-bar-buttons', buttonIds),
+    getSearchPanelState: () =>
+      request<{ activePanel: 'explorer' | 'search'; expandedSearchFolders: string[]; lastSearchQuery: string }>(
+        'state:get-search-panel-state'
+      ),
+    setSearchPanelState: (panelState: {
+      activePanel: 'explorer' | 'search'
+      expandedSearchFolders: string[]
+      lastSearchQuery: string
+    }) => request<void>('state:set-search-panel-state', panelState)
   }
 }
 
