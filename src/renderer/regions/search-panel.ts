@@ -99,90 +99,10 @@ function getLastQuery(): string {
 async function doRender(): Promise<void> {
   resultsEl.replaceChildren()
   if (!lastQuery) {
-    await renderHierarchy()
-  } else {
-    await renderSearchResults()
-  }
-}
-
-async function renderHierarchy(): Promise<void> {
-  let entries: NoteEntryDto[]
-  try {
-    entries = await window.api.vault.listNotes()
-  } catch (e) {
-    statusEl.textContent = '[Error: ' + (e as Error).message + ']'
+    statusEl.textContent = ''
     return
   }
-  if (entries.length === 0) {
-    statusEl.textContent = 'Vault is empty'
-    return
-  }
-  statusEl.textContent = ''
-  resultsEl.appendChild(buildHierarchyTree(entries))
-}
-
-function buildHierarchyTree(entries: NoteEntryDto[]): HTMLUListElement {
-  const ul = document.createElement('ul')
-  ul.className = 'search-panel-tree'
-  for (const entry of entries) {
-    ul.appendChild(buildHierarchyEntry(entry))
-  }
-  return ul
-}
-
-function buildHierarchyEntry(entry: NoteEntryDto): HTMLLIElement {
-  const li = document.createElement('li')
-  li.className = 'search-panel-card'
-  li.dataset.path = entry.path
-
-  if (entry.isDirectory) {
-    const card = document.createElement('div')
-    card.className = 'search-panel-folder-card'
-    const toggle = document.createElement('button')
-    toggle.className = 'search-panel-toggle'
-    const img = document.createElement('img')
-    img.className = 'folder-arrow'
-    const collapsed = collapsedFolders.has(entry.path)
-    img.src = collapsed ? rightArrowUrl : bottomArrowUrl
-    img.alt = collapsed ? 'Expand' : 'Collapse'
-    toggle.appendChild(img)
-    const nameSpan = document.createElement('span')
-    nameSpan.className = 'search-panel-name'
-    nameSpan.textContent = entry.name
-    toggle.appendChild(nameSpan)
-    card.appendChild(toggle)
-
-    const childUl = buildHierarchyTree(entry.children)
-    childUl.hidden = collapsed
-
-    toggle.addEventListener('click', () => {
-      const nowCollapsed = !childUl.hidden
-      childUl.hidden = nowCollapsed
-      if (nowCollapsed) collapsedFolders.add(entry.path)
-      else collapsedFolders.delete(entry.path)
-      setToggleIcon(toggle, nowCollapsed)
-      scheduleSaveState()
-    })
-
-    li.appendChild(card)
-    li.appendChild(childUl)
-  } else {
-    const card = document.createElement('div')
-    card.className = 'search-panel-file-card'
-    const nameSpan = document.createElement('span')
-    nameSpan.className = 'search-panel-name'
-    const displayName = entry.name.toLowerCase().endsWith('.md')
-      ? entry.name.slice(0, -3)
-      : entry.name
-    nameSpan.textContent = displayName
-    card.appendChild(nameSpan)
-    card.addEventListener('click', () => {
-      void deps.tabsApi.openFile(entry.path)
-    })
-    li.appendChild(card)
-  }
-
-  return li
+  await renderSearchResults()
 }
 
 async function renderSearchResults(): Promise<void> {
@@ -198,22 +118,39 @@ async function renderSearchResults(): Promise<void> {
     return
   }
   statusEl.textContent = results.length + ' results'
-  resultsEl.appendChild(buildResultTree(results))
+
+  let entries: NoteEntryDto[] = []
+  try {
+    entries = await window.api.vault.listNotes()
+  } catch {
+    // vault unavailable — folder expansion falls back to search-only children
+  }
+  const entryByPath = new Map<string, NoteEntryDto>()
+  populateEntryByPath(entries, entryByPath)
+
+  resultsEl.appendChild(buildResultTree(results, entryByPath))
 }
 
-function buildResultTree(results: SearchEntryDto[]): HTMLUListElement {
-  const byPath = new Map<string, SearchEntryDto>()
-  for (const r of results) byPath.set(r.path, r)
+function populateEntryByPath(entries: NoteEntryDto[], map: Map<string, NoteEntryDto>): void {
+  for (const entry of entries) {
+    map.set(entry.path, entry)
+    if (entry.children.length > 0) {
+      populateEntryByPath(entry.children, map)
+    }
+  }
+}
 
-  const childrenByParent = new Map<string, SearchEntryDto[]>()
+function buildResultTree(
+  results: SearchEntryDto[],
+  entryByPath: Map<string, NoteEntryDto>
+): HTMLUListElement {
+  const searchByPath = new Map<string, SearchEntryDto>()
+  for (const r of results) searchByPath.set(r.path, r)
+
   const roots: SearchEntryDto[] = []
   for (const r of results) {
     const parent = pathDirname(r.path)
-    if (byPath.has(parent)) {
-      const arr = childrenByParent.get(parent) ?? []
-      arr.push(r)
-      childrenByParent.set(parent, arr)
-    } else {
+    if (!searchByPath.has(parent)) {
       roots.push(r)
     }
   }
@@ -221,49 +158,60 @@ function buildResultTree(results: SearchEntryDto[]): HTMLUListElement {
   const ul = document.createElement('ul')
   ul.className = 'search-panel-tree'
   for (const r of roots) {
-    ul.appendChild(buildResultEntry(r, childrenByParent))
+    ul.appendChild(
+      buildEntryNode(r.path, r.name, r.kind === 'folder', searchByPath, entryByPath)
+    )
   }
   return ul
 }
 
-function buildResultEntry(
-  entry: SearchEntryDto,
-  childrenByParent: Map<string, SearchEntryDto[]>
+function buildEntryNode(
+  path: string,
+  name: string,
+  isDir: boolean,
+  searchByPath: Map<string, SearchEntryDto>,
+  entryByPath: Map<string, NoteEntryDto>
 ): HTMLLIElement {
   const li = document.createElement('li')
   li.className = 'search-panel-card'
-  li.dataset.path = entry.path
+  li.dataset.path = path
 
-  if (entry.kind === 'folder') {
+  const searchEntry = searchByPath.get(path)
+  const highlightQuery = searchEntry ? lastQuery : ''
+
+  if (isDir) {
     const card = document.createElement('div')
     card.className = 'search-panel-folder-card'
     const toggle = document.createElement('button')
     toggle.className = 'search-panel-toggle'
     const img = document.createElement('img')
     img.className = 'folder-arrow'
-    const collapsed = collapsedFolders.has(entry.path)
+    const collapsed = collapsedFolders.has(path)
     img.src = collapsed ? rightArrowUrl : bottomArrowUrl
     img.alt = collapsed ? 'Expand' : 'Collapse'
     toggle.appendChild(img)
     const nameSpan = document.createElement('span')
     nameSpan.className = 'search-panel-name'
-    highlightInto(nameSpan, entry.name, lastQuery)
+    highlightInto(nameSpan, name, highlightQuery)
     toggle.appendChild(nameSpan)
     card.appendChild(toggle)
 
-    const children = childrenByParent.get(entry.path) ?? []
+    const vaultEntry = entryByPath.get(path)
+    const children = vaultEntry?.children ?? []
     const childUl = document.createElement('ul')
     childUl.className = 'search-panel-tree'
     childUl.hidden = collapsed
     for (const child of children) {
-      childUl.appendChild(buildResultEntry(child, childrenByParent))
+      childUl.appendChild(
+        buildEntryNode(child.path, child.name, child.isDirectory, searchByPath, entryByPath)
+      )
     }
 
     toggle.addEventListener('click', () => {
       const nowCollapsed = !childUl.hidden
       childUl.hidden = nowCollapsed
-      if (nowCollapsed) collapsedFolders.add(entry.path)
-      else collapsedFolders.delete(entry.path)
+      if (nowCollapsed) collapsedFolders.add(path)
+      else collapsedFolders.delete(path)
       setToggleIcon(toggle, nowCollapsed)
       scheduleSaveState()
     })
@@ -275,21 +223,19 @@ function buildResultEntry(
     card.className = 'search-panel-file-card'
     const nameSpan = document.createElement('span')
     nameSpan.className = 'search-panel-name'
-    const displayName = entry.name.toLowerCase().endsWith('.md')
-      ? entry.name.slice(0, -3)
-      : entry.name
-    highlightInto(nameSpan, displayName, lastQuery)
+    const displayName = name.toLowerCase().endsWith('.md') ? name.slice(0, -3) : name
+    highlightInto(nameSpan, displayName, highlightQuery)
     card.appendChild(nameSpan)
 
-    if (entry.snippet) {
+    if (searchEntry?.snippet) {
       const snippetDiv = document.createElement('div')
       snippetDiv.className = 'search-panel-snippet'
-      highlightInto(snippetDiv, entry.snippet, lastQuery)
+      highlightInto(snippetDiv, searchEntry.snippet, lastQuery)
       card.appendChild(snippetDiv)
     }
 
     card.addEventListener('click', () => {
-      void deps.tabsApi.openFile(entry.path)
+      void deps.tabsApi.openFile(path)
     })
     li.appendChild(card)
   }
@@ -298,9 +244,8 @@ function buildResultEntry(
 }
 
 function buildPanelDom(): void {
-  panelEl = document.createElement('div')
-  panelEl.id = 'search-panel'
-  panelEl.hidden = true
+  panelEl = document.getElementById('search-panel') as HTMLDivElement
+  panelEl.replaceChildren()
 
   inputEl = document.createElement('input')
   inputEl.id = 'search-panel-input'
@@ -316,14 +261,6 @@ function buildPanelDom(): void {
   panelEl.appendChild(inputEl)
   panelEl.appendChild(statusEl)
   panelEl.appendChild(resultsEl)
-
-  const sidebar = document.getElementById('sidebar')
-  const footer = document.getElementById('sidebar-footer')
-  if (sidebar && footer) {
-    sidebar.insertBefore(panelEl, footer)
-  } else if (sidebar) {
-    sidebar.appendChild(panelEl)
-  }
 
   inputEl.addEventListener('input', () => {
     lastQuery = inputEl.value
@@ -344,8 +281,6 @@ export function initSearchPanel(d: SearchPanelDeps): SearchPanelApi {
     .then((state) => {
       collapsedFolders.clear()
       for (const f of state.expandedSearchFolders) collapsedFolders.add(f)
-      lastQuery = state.lastSearchQuery
-      inputEl.value = lastQuery
       render()
     })
     .catch(() => {

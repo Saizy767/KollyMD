@@ -8,8 +8,8 @@ import { initTabs } from './regions/tabs'
 import type { TabsApi } from './regions/tabs'
 import { initExplorer } from './regions/explorer'
 import type { ExplorerApi } from './regions/explorer'
+import { initSearchPanel } from './regions/search-panel'
 
-initCommandBar()
 initSidebar()
 
 let tabsApi!: TabsApi
@@ -33,6 +33,10 @@ explorerApi = initExplorer({
   editorApi,
   tabsApi,
 })
+
+const searchPanelApi = initSearchPanel({ tabsApi })
+
+initCommandBar({ searchPanelApi })
 
 tabsApi.updateDocStatus()
 explorerApi.loadCurrentVault()
