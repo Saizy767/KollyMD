@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ModRegistry } from './registry'
-import type { ModContext, ModEntry, ModRegistryApi, SidebarButtonRegistration } from './types'
+import type { ModContext, ModEntry, ModRegistryApi } from './types'
+import type { ButtonModule } from '../../shared/domain/buttons/ButtonModule'
 
 const mockContext: ModContext = {
   openFile: vi.fn(),
@@ -108,24 +109,24 @@ describe('ModRegistry', () => {
     expect(mod?.error).toBe('Missing init export')
   })
 
-  it('registerSidebarButton stores the registration', () => {
+  it('registerButton stores the registration', () => {
     const registry = new ModRegistry({})
-    const button: SidebarButtonRegistration = { id: 'test-btn', onClick: () => {} }
-    registry.registerSidebarButton(button)
-    expect(registry.getSidebarButtons()).toHaveLength(1)
-    expect(registry.getSidebarButtons()[0].id).toBe('test-btn')
+    const mod: ButtonModule = { manifest: { id: 'test-btn', label: 'Test', order: 0 }, onActivate: () => {} }
+    registry.registerButton(mod)
+    expect(registry.getButtonRegistry().getRegisteredModules()).toHaveLength(1)
+    expect(registry.getButtonRegistry().getRegisteredModules()[0].manifest.id).toBe('test-btn')
   })
 
   it('mod init receives the registry as ModRegistryApi', async () => {
     const init = vi.fn((registry: ModRegistryApi, _ctx: ModContext) => {
-      registry.registerSidebarButton({ id: 'from-mod', onClick: () => {} })
+      registry.registerButton({ manifest: { id: 'from-mod', label: 'From Mod', order: 0 } })
     })
     const registry = new ModRegistry({
       './self-reg/index.ts': makeEntry(init),
     })
     await registry.loadAll(mockContext)
-    expect(registry.getSidebarButtons()).toHaveLength(1)
-    expect(registry.getSidebarButtons()[0].id).toBe('from-mod')
+    expect(registry.getButtonRegistry().getRegisteredModules()).toHaveLength(1)
+    expect(registry.getButtonRegistry().getRegisteredModules()[0].manifest.id).toBe('from-mod')
   })
 
   it('mod init receives the context', async () => {

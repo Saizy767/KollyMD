@@ -4,8 +4,6 @@ import { initSearchPanel } from './panel'
 import manifestData from './manifest.json'
 import iconUrl from './icon.svg'
 
-const SEARCH_OPEN_EVENT = 'kollymd:open-search'
-
 const manifest: ModManifest = manifestData
 
 function validate(): void {
@@ -22,16 +20,19 @@ function validate(): void {
 
 export async function init(registry: ModRegistryApi, context: ModContext): Promise<void> {
   validate()
-  const panel = initSearchPanel(context)
+  const panel = initSearchPanel(context, manifest.id)
 
-  registry.registerSidebarButton({
-    id: manifest.id,
-    iconUrl,
-    templateId: 'search',
-    onClick: () => panel.showPanel(),
+  registry.registerButton({
+    manifest: {
+      id: manifest.id,
+      label: manifest.name,
+      order: manifest.order ?? 99,
+      iconPath: iconUrl,
+      description: manifest.description,
+    },
+    onActivate: () => panel.showPanel(),
+    onDeactivate: () => panel.hidePanel(),
   })
-
-  document.addEventListener(SEARCH_OPEN_EVENT, () => panel.showPanel())
 
   await panel.restoreState()
 }

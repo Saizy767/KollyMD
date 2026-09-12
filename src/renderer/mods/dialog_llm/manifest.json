@@ -1,5 +1,7 @@
 {
   "id": "dialog_llm",
   "name": "Dialog",
+  "description": "Общение с языковой моделью",
+  "order": 3,
   "version": "1.0.0"
 }

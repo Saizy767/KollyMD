@@ -6,10 +6,12 @@ import type { ModContext } from '../types'
 
 export interface SearchPanelHandle {
   showPanel: () => void
+  hidePanel: () => void
   restoreState: () => Promise<void>
 }
 
 let openFile: (filePath: string) => Promise<void>
+let modId: string
 let panelEl: HTMLDivElement
 let inputEl: HTMLInputElement
 let resultsEl: HTMLDivElement
@@ -60,7 +62,7 @@ function setToggleIcon(btn: HTMLButtonElement, collapsed: boolean): void {
 function saveStateImmediate(): void {
   window.api.state
     .setSearchPanelState({
-      activePanel: 'search',
+      activePanel: modId,
       expandedSearchFolders: Array.from(collapsedFolders),
       lastSearchQuery: lastQuery,
     })
@@ -233,15 +235,11 @@ function buildEntryNode(
   return li
 }
 
-function hideOtherPanels(): void {
-  const explorerEl = document.getElementById('explorer')
-  if (explorerEl) explorerEl.hidden = true
-  const llmEl = document.getElementById('llm-panel')
-  if (llmEl) llmEl.hidden = true
+function hidePanel(): void {
+  panelEl.hidden = true
 }
 
 function showPanel(): void {
-  hideOtherPanels()
   panelEl.hidden = false
   render()
   saveStateImmediate()
@@ -286,24 +284,19 @@ async function restoreState(): Promise<void> {
     const state = await window.api.state.getSearchPanelState()
     collapsedFolders.clear()
     for (const f of state.expandedSearchFolders) collapsedFolders.add(f)
-    if (state.activePanel === 'search') {
-      hideOtherPanels()
-      panelEl.hidden = false
-      render()
-    } else {
-      render()
-    }
+    render()
   } catch {
     render()
   }
 }
 
-export function initSearchPanel(ctx: ModContext): SearchPanelHandle {
-  if (initialized) return { showPanel, restoreState }
+export function initSearchPanel(ctx: ModContext, id: string): SearchPanelHandle {
+  if (initialized) return { showPanel, hidePanel, restoreState }
   initialized = true
   openFile = ctx.openFile
+  modId = id
 
   buildPanelDom()
 
-  return { showPanel, restoreState }
+  return { showPanel, hidePanel, restoreState }
 }

@@ -1,5 +1,7 @@
 {
   "id": "file_system",
   "name": "File System",
+  "description": "Навигация по файлам и папкам",
+  "order": 1,
   "version": "1.0.0"
 }

@@ -3,6 +3,7 @@ export interface ButtonModuleManifest {
   label: string
   order: number
   iconPath?: string
+  description?: string
 }
 
 export interface ButtonModule {

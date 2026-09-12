@@ -13,7 +13,7 @@ interface EditorDeps {
   getActiveTab: () => TabState | null
   setDirty: (value: boolean) => Promise<void>
   openFile: (path: string) => Promise<void>
-  loadExplorer: () => Promise<void>
+  refreshFileTree: () => Promise<void>
 }
 
 let deps: EditorDeps
@@ -82,7 +82,7 @@ async function handleWikiLinkClick(name: string): Promise<void> {
       const confirmed = confirm("Create note '" + name + "'?")
       if (confirmed) {
         const result = await window.api.knowledge.createNoteFromLink(name)
-        await deps.loadExplorer()
+        await deps.refreshFileTree()
         await deps.openFile(result.path)
       }
     }

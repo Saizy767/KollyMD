@@ -1,5 +1,7 @@
 import type { IpcMain, BrowserWindow } from 'electron'
 import { app } from 'electron'
+import * as fs from 'fs'
+import * as path from 'path'
 import { AppConfig } from './shared/infrastructure/AppConfig'
 import {
   InMemoryVaultRepository,
@@ -18,7 +20,6 @@ import {
 } from './modules/vault'
 import {
   InMemoryDocumentRepository,
-  StaticButtonTemplateRepository,
   OpenDocument,
   SaveDocument,
   SaveAsDocument,
@@ -29,7 +30,6 @@ import {
   GetOpenDocuments,
   UpdateDocumentPath,
   ReorderDocuments,
-  GetAvailableButtonTemplates,
   EditorIpcHandler
 } from './modules/editor'
 import {
@@ -39,7 +39,7 @@ import {
   CreateNoteFromLink,
   KnowledgeIpcHandler
 } from './modules/knowledge'
-import { SearchNotes, SearchIpcHandler, SearchEntries, SearchEntriesIpcHandler } from './renderer/mods/search/server'
+import type { VaultRepository, NoteRepository } from './modules/vault'
 import {
   JsonStateRepository,
   GetLastVault,
@@ -58,6 +58,26 @@ import {
   SetSearchPanelState,
   StateIpcHandler
 } from './modules/state'
+
+interface ServerModDeps {
+  ipcMain: IpcMain
+  vaultRepo: VaultRepository
+  noteRepo: NoteRepository
+}
+
+function loadServerMods(modsDir: string, deps: ServerModDeps): void {
+  if (!fs.existsSync(modsDir)) return
+  for (const folder of fs.readdirSync(modsDir)) {
+    const serverPath = path.join(modsDir, folder, 'server', 'index.js')
+    if (!fs.existsSync(serverPath)) continue
+    try {
+      const mod = require(serverPath) as { register: (d: ServerModDeps) => void }
+      mod.register(deps)
+    } catch (e) {
+      console.error('[KollyMD] Server mod failed to load: ' + folder, e)
+    }
+  }
+}
 
 export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow | null): void {
   const config = AppConfig.create(app.getPath('userData'))
@@ -101,16 +121,10 @@ export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow |
   const updateDocumentPath = new UpdateDocumentPath(docRepo)
   const reorderDocuments = new ReorderDocuments(docRepo)
 
-  const buttonTemplateRepo = new StaticButtonTemplateRepository()
-  const getAvailableButtonTemplates = new GetAvailableButtonTemplates(buttonTemplateRepo)
-
   const findBacklinks = new FindBacklinks(vaultRepo, noteRepo)
   const findNotesByTag = new FindNotesByTag(vaultRepo, noteRepo)
   const resolveLink = new ResolveLink(vaultRepo, noteRepo)
   const createNoteFromLink = new CreateNoteFromLink(vaultRepo, noteRepo)
-
-  const searchNotes = new SearchNotes(vaultRepo, noteRepo)
-  const searchEntries = new SearchEntries(vaultRepo, noteRepo)
 
   const lastVaultPath = getLastVault.execute()
   if (lastVaultPath) {
@@ -145,7 +159,6 @@ export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow |
     getOpenDocuments,
     updateDocumentPath,
     reorderDocuments,
-    getAvailableButtonTemplates,
     getOpenTabs,
     getCurrentVault
   )
@@ -160,11 +173,11 @@ export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow |
   )
   knowledgeIpc.register()
 
-  const searchIpc = new SearchIpcHandler(ipcMain, searchNotes)
-  searchIpc.register()
-
-  const searchEntriesIpc = new SearchEntriesIpcHandler(ipcMain, searchEntries)
-  searchEntriesIpc.register()
+  loadServerMods(path.join(__dirname, 'renderer', 'mods'), {
+    ipcMain,
+    vaultRepo,
+    noteRepo,
+  })
 
   const stateIpc = new StateIpcHandler(
     ipcMain,

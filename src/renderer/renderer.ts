@@ -1,7 +1,7 @@
 /// <reference path="./env.d.ts" />
 
-import { initCommandBar } from './regions/command-bar'
-import { initSidebar, renderModSidebarButtons } from './regions/sidebar'
+import { initCommandBar, renderCommandBarButtons } from './regions/command-bar'
+import { initSidebar } from './regions/sidebar'
 import { initEditor } from './regions/editor'
 import type { EditorApi } from './regions/editor'
 import { initTabs } from './regions/tabs'
@@ -16,21 +16,22 @@ const editorApi: EditorApi = initEditor({
   getActiveTab: () => tabsApi.activeTab(),
   setDirty: (v) => tabsApi.setDirty(v),
   openFile: (p) => tabsApi.openFile(p),
-  loadExplorer: async () => { document.dispatchEvent(new CustomEvent('kollymd:explorer-refresh')) },
+  refreshFileTree: async () => { document.dispatchEvent(new CustomEvent('kollymd:file-tree-refresh')) },
 })
 
 tabsApi = initTabs({
   getEditorContent: editorApi.getEditorContent,
   setEditorContent: editorApi.setEditorContent,
   loadBacklinks: editorApi.loadBacklinks,
-  refreshActiveHighlight: () => { document.dispatchEvent(new CustomEvent('kollymd:explorer-refresh-highlight')) },
+  refreshActiveHighlight: () => { document.dispatchEvent(new CustomEvent('kollymd:active-highlight-refresh')) },
 })
 
-initCommandBar()
+const modRegistry = new ModRegistry()
+
+initCommandBar(modRegistry)
 
 tabsApi.updateDocStatus()
 
-const modRegistry = new ModRegistry()
 modRegistry.loadAll({ openFile: (p) => tabsApi.openFile(p), editorApi, tabsApi })
-  .then(() => renderModSidebarButtons(modRegistry))
+  .then(() => renderCommandBarButtons(modRegistry))
   .catch(() => {})

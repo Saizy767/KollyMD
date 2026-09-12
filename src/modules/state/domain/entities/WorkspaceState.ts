@@ -1,5 +1,3 @@
-export type SearchPanel = 'explorer' | 'search'
-
 export class WorkspaceState {
   constructor(
     public lastVaultPath: string | null = null,
@@ -9,7 +7,7 @@ export class WorkspaceState {
     public activeTabPath: string | null = null,
     public expandedFolders: string[] = [],
     public commandBarButtons: string[] = [],
-    public activePanel: SearchPanel = 'explorer',
+    public activePanel: string | null = null,
     public expandedSearchFolders: string[] = [],
     public lastSearchQuery: string = ''
   ) {}

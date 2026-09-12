@@ -5,8 +5,9 @@ import type {
   ModInstance,
   ModManifest,
   ModRegistryApi,
-  SidebarButtonRegistration,
 } from './types'
+import { ButtonRegistry } from '../modules/buttons/ButtonRegistry'
+import type { ButtonModule } from '../../shared/domain/buttons/ButtonModule'
 
 type ModEntryMap = Record<string, () => Promise<ModEntry>>
 
@@ -19,8 +20,8 @@ function deriveModId(globPath: string): ModId {
 
 export class ModRegistry implements ModRegistryApi {
   private readonly mods = new Map<ModId, ModInstance>()
-  private readonly sidebarButtons: SidebarButtonRegistration[] = []
   private readonly entries: ModEntryMap
+  private readonly buttonRegistry = new ButtonRegistry()
 
   constructor(entries: ModEntryMap = globEntries) {
     this.entries = entries
@@ -30,12 +31,12 @@ export class ModRegistry implements ModRegistryApi {
     return new Map(this.mods)
   }
 
-  getSidebarButtons(): readonly SidebarButtonRegistration[] {
-    return this.sidebarButtons
+  getButtonRegistry(): ButtonRegistry {
+    return this.buttonRegistry
   }
 
-  registerSidebarButton(button: SidebarButtonRegistration): void {
-    this.sidebarButtons.push(button)
+  registerButton(module: ButtonModule): void {
+    this.buttonRegistry.register(module)
   }
 
   async loadAll(context: ModContext): Promise<void> {

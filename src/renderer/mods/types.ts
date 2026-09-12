@@ -1,3 +1,5 @@
+import type { ButtonModule } from '../../shared/domain/buttons/ButtonModule'
+
 export type ModId = string
 
 export type ModStatus = 'loaded' | 'failed'
@@ -6,6 +8,8 @@ export interface ModManifest {
   id: ModId
   name: string
   version?: string
+  description?: string
+  order?: number
 }
 
 export interface ModInstance {
@@ -15,15 +19,8 @@ export interface ModInstance {
   error?: string
 }
 
-export interface SidebarButtonRegistration {
-  id: string
-  iconUrl?: string
-  onClick: () => void
-  templateId?: string
-}
-
 export interface ModRegistryApi {
-  registerSidebarButton(button: SidebarButtonRegistration): void
+  registerButton(module: ButtonModule): void
 }
 
 export interface ModContext {

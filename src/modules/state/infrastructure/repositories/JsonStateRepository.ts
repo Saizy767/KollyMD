@@ -24,7 +24,7 @@ export class JsonStateRepository implements StateRepository {
         data.activeTabPath ?? null,
         data.expandedFolders ?? []
       )
-      state.activePanel = data.activePanel === 'search' ? 'search' : 'explorer'
+      state.activePanel = typeof data.activePanel === 'string' ? data.activePanel : null
       state.expandedSearchFolders = Array.isArray(data.expandedSearchFolders) ? data.expandedSearchFolders : []
       state.lastSearchQuery = typeof data.lastSearchQuery === 'string' ? data.lastSearchQuery : ''
       return state

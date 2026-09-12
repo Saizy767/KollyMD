@@ -77,9 +77,7 @@ const api = {
     updatePath: (docId: string, newPath: string) =>
       request<void>('editor:update-path', docId, newPath),
     reorderDocuments: (ids: string[]) =>
-      request<void>('editor:reorder-documents', ids),
-    getAvailableButtonTemplates: () =>
-      request<{ templates: unknown[] }>('editor:get-available-button-templates')
+      request<void>('editor:reorder-documents', ids)
   },
   knowledge: {
     findBacklinks: (noteName: string) =>
@@ -105,11 +103,11 @@ const api = {
     getCommandBarButtons: () => request<string[]>('state:get-command-bar-buttons'),
     setCommandBarButtons: (buttonIds: string[]) => request<void>('state:set-command-bar-buttons', buttonIds),
     getSearchPanelState: () =>
-      request<{ activePanel: 'explorer' | 'search' | 'llm-dialog'; expandedSearchFolders: string[]; lastSearchQuery: string }>(
+      request<{ activePanel: string | null; expandedSearchFolders: string[]; lastSearchQuery: string }>(
         'state:get-search-panel-state'
       ),
     setSearchPanelState: (panelState: {
-      activePanel: 'explorer' | 'search' | 'llm-dialog'
+      activePanel: string | null
       expandedSearchFolders: string[]
       lastSearchQuery: string
     }) => request<void>('state:set-search-panel-state', panelState)

@@ -79,7 +79,7 @@ body.dragging #sidebar-resizer {
   flex-shrink: 0;
 }
 
-#explorer-status {
+#selected-path {
   font-size: 11px;
   color: #888;
   overflow: hidden;

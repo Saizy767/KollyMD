@@ -4,8 +4,6 @@ import { initExplorer } from './panel'
 import manifestData from './manifest.json'
 import iconUrl from './icon.svg'
 
-const EXPLORER_OPEN_EVENT = 'kollymd:open-explorer'
-
 const manifest: ModManifest = manifestData
 
 function validate(): void {
@@ -22,18 +20,22 @@ function validate(): void {
 
 export async function init(registry: ModRegistryApi, context: ModContext): Promise<void> {
   validate()
-  const explorer = initExplorer(context)
+  const explorer = initExplorer(context, manifest.id)
 
-  registry.registerSidebarButton({
-    id: manifest.id,
-    iconUrl,
-    templateId: 'filesystem',
-    onClick: () => explorer.showPanel(),
+  registry.registerButton({
+    manifest: {
+      id: manifest.id,
+      label: manifest.name,
+      order: manifest.order ?? 99,
+      iconPath: iconUrl,
+      description: manifest.description,
+    },
+    onActivate: () => explorer.showPanel(),
+    onDeactivate: () => explorer.hidePanel(),
   })
 
-  document.addEventListener(EXPLORER_OPEN_EVENT, () => explorer.showPanel())
-  document.addEventListener('kollymd:explorer-refresh', () => { void explorer.loadExplorer() })
-  document.addEventListener('kollymd:explorer-refresh-highlight', () => explorer.refreshActiveHighlight())
+  document.addEventListener('kollymd:file-tree-refresh', () => { void explorer.loadExplorer() })
+  document.addEventListener('kollymd:active-highlight-refresh', () => explorer.refreshActiveHighlight())
 
   await explorer.loadCurrentVault()
   await explorer.restoreState()

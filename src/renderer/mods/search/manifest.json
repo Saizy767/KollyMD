@@ -1,5 +1,7 @@
 {
   "id": "search",
   "name": "Search",
+  "description": "Глобальный поиск по заметкам",
+  "order": 2,
   "version": "1.0.0"
 }

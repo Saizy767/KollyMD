@@ -17,6 +17,7 @@ import type { ModContext } from '../types'
 
 export interface ExplorerHandle {
   showPanel: () => void
+  hidePanel: () => void
   restoreState: () => Promise<void>
   loadExplorer: () => Promise<void>
   refreshActiveHighlight: () => void
@@ -25,6 +26,7 @@ export interface ExplorerHandle {
 
 let editorApi: EditorApi
 let tabsApi: TabsApi
+let modId: string
 let explorerTree: HTMLUListElement
 let explorerPanel: HTMLDivElement
 let explorerStatus: HTMLSpanElement
@@ -281,35 +283,18 @@ async function loadCurrentVault(): Promise<void> {
   }
 }
 
-function hideOtherPanels(): void {
-  const searchPanel = document.getElementById('search-panel')
-  if (searchPanel) searchPanel.hidden = true
-  const llmPanel = document.getElementById('llm-panel')
-  if (llmPanel) llmPanel.hidden = true
-}
-
-function setPanelButtonActive(): void {
-  const buttons = document.querySelectorAll('#command-bar .cmd-btn')
-  for (const btn of buttons) {
-    const el = btn as HTMLElement
-    const tplId = el.dataset.templateId
-    if (tplId === 'search' || tplId === 'filesystem' || tplId === 'llm-dialog') {
-      if (tplId === 'filesystem') el.dataset.active = 'true'
-      else delete el.dataset.active
-    }
-  }
+function hidePanel(): void {
+  explorerPanel.hidden = true
 }
 
 function showPanel(): void {
-  hideOtherPanels()
   explorerPanel.hidden = false
-  setPanelButtonActive()
   window.api.state
     .getSearchPanelState()
     .then((state) => {
       window.api.state
         .setSearchPanelState({
-          activePanel: 'explorer',
+          activePanel: modId,
           expandedSearchFolders: state.expandedSearchFolders,
           lastSearchQuery: state.lastSearchQuery,
         })
@@ -319,21 +304,13 @@ function showPanel(): void {
 }
 
 async function restoreState(): Promise<void> {
-  try {
-    const state = await window.api.state.getSearchPanelState()
-    if (state.activePanel === 'explorer') {
-      hideOtherPanels()
-      explorerPanel.hidden = false
-      setPanelButtonActive()
-    }
-  } catch {
-    // state unavailable — explorer stays visible by default
-  }
+  // Panel visibility is managed by ButtonRegistry.setActive() via onActivate/onDeactivate.
 }
 
 function buildPanelDom(): void {
   explorerPanel = document.createElement('div')
   explorerPanel.id = 'explorer'
+  explorerPanel.hidden = true
 
   explorerTree = document.createElement('ul')
   explorerTree.id = 'explorer-tree'
@@ -350,9 +327,10 @@ function buildPanelDom(): void {
   selectDirBtn = document.getElementById('select-dir') as HTMLButtonElement
 }
 
-export function initExplorer(ctx: ModContext): ExplorerHandle {
+export function initExplorer(ctx: ModContext, id: string): ExplorerHandle {
   editorApi = ctx.editorApi
   tabsApi = ctx.tabsApi
+  modId = id
 
   buildPanelDom()
 
@@ -395,5 +373,5 @@ export function initExplorer(ctx: ModContext): ExplorerHandle {
     watch.handleWatchEvents(batch).catch((e) => console.warn('watch error', (e as Error).message))
   })
 
-  return { showPanel, restoreState, loadExplorer, refreshActiveHighlight, loadCurrentVault }
+  return { showPanel, hidePanel, restoreState, loadExplorer, refreshActiveHighlight, loadCurrentVault }
 }

@@ -2,6 +2,7 @@ import './panel.css'
 
 export interface LlmDialogHandle {
   showPanel: () => void
+  hidePanel: () => void
   restoreState: () => Promise<void>
 }
 
@@ -10,6 +11,7 @@ interface ChatMessage {
   text: string
 }
 
+let modId: string
 let panelEl: HTMLDivElement
 let messagesEl: HTMLDivElement
 let inputEl: HTMLInputElement
@@ -50,15 +52,11 @@ function sendMessage(): void {
   renderMessages()
 }
 
-function hideOtherPanels(): void {
-  const explorerEl = document.getElementById('explorer')
-  if (explorerEl) explorerEl.hidden = true
-  const searchPanel = document.getElementById('search-panel')
-  if (searchPanel) searchPanel.hidden = true
+function hidePanel(): void {
+  panelEl.hidden = true
 }
 
 function showPanel(): void {
-  hideOtherPanels()
   panelEl.hidden = false
   render()
   window.api.state
@@ -66,7 +64,7 @@ function showPanel(): void {
     .then((state) => {
       window.api.state
         .setSearchPanelState({
-          activePanel: 'llm-dialog',
+          activePanel: modId,
           expandedSearchFolders: state.expandedSearchFolders,
           lastSearchQuery: state.lastSearchQuery,
         })
@@ -125,22 +123,14 @@ function buildPanelDom(): void {
 }
 
 async function restoreState(): Promise<void> {
-  try {
-    const state = await window.api.state.getSearchPanelState()
-    if (state.activePanel === 'llm-dialog') {
-      hideOtherPanels()
-      panelEl.hidden = false
-      render()
-    }
-  } catch {
-    // state unavailable — panel stays hidden
-  }
+  // Panel visibility is managed by ButtonRegistry.setActive().
 }
 
-export function initLlmDialog(): LlmDialogHandle {
-  if (initialized) return { showPanel, restoreState }
+export function initLlmDialog(id: string): LlmDialogHandle {
+  if (initialized) return { showPanel, hidePanel, restoreState }
   initialized = true
+  modId = id
   buildPanelDom()
   render()
-  return { showPanel, restoreState }
+  return { showPanel, hidePanel, restoreState }
 }

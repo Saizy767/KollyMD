@@ -1,21 +1,8 @@
-import searchIconUrl from '../assets/search-icon.svg'
-import llmIconUrl from '../assets/llm-icon.svg'
-import clusterTreeIconUrl from '../assets/cluster-tree-icon.svg'
-import filesystemIconUrl from '../assets/filesystem-icon.svg'
-
-const iconMap: Record<string, string> = {
-  'assets/search-icon.svg': searchIconUrl,
-  'assets/llm-icon.svg': llmIconUrl,
-  'assets/cluster-tree-icon.svg': clusterTreeIconUrl,
-  'assets/filesystem-icon.svg': filesystemIconUrl
-}
-
 export interface ButtonTemplateChoice {
   id: string
   name: string
   description: string
   iconPath: string
-  action: string
 }
 
 let dialogResolve: ((value: ButtonTemplateChoice | null) => void) | null = null
@@ -69,7 +56,7 @@ export function showButtonTemplateDialog(
 
       const icon = document.createElement('img')
       icon.className = 'button-template-icon'
-      icon.src = iconMap[tpl.iconPath] ?? ''
+      icon.src = tpl.iconPath
       icon.alt = tpl.name
       card.appendChild(icon)
 

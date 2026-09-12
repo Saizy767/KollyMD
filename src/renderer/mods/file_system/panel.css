@@ -9,6 +9,11 @@
 
 #explorer > button {
   align-self: flex-start;
+  background: #3a3a3a;
+}
+
+#explorer > button:hover:not(:disabled) {
+  background: #4a4a4a;
 }
 
 #explorer-tree {

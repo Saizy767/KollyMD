@@ -1,7 +1,7 @@
 import type { StateRepository } from '../../domain/interfaces/StateRepository'
 
 export interface SearchPanelStateDto {
-  activePanel: 'explorer' | 'search'
+  activePanel: string | null
   expandedSearchFolders: string[]
   lastSearchQuery: string
 }

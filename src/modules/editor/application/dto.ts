@@ -27,11 +27,3 @@ export interface OpenTabsDto {
   tabs: TabDto[]
   activeId: string | null
 }
-
-export interface ButtonTemplateDto {
-  id: string
-  name: string
-  description: string
-  iconPath: string
-  action: string
-}

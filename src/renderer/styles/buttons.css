@@ -18,12 +18,10 @@ button:disabled {
   cursor: default;
 }
 
-#explorer > button,
 #sidebar-footer button {
   background: #3a3a3a;
 }
 
-#explorer > button:hover:not(:disabled),
 #sidebar-footer button:hover:not(:disabled) {
   background: #4a4a4a;
 }

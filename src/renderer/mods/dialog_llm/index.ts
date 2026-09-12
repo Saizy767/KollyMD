@@ -4,13 +4,11 @@ import { initLlmDialog } from './panel'
 import manifestData from './manifest.json'
 import iconUrl from './icon.svg'
 
-const LLM_DIALOG_OPEN_EVENT = 'kollymd:open-llm-dialog'
-
 const manifest: ModManifest = manifestData
 
 function validate(): void {
   if (!manifest || typeof manifest.id !== 'string' || manifest.id.length === 0) {
-    throw new ModManifestError('dialog_llm* manifest.json missing required field "id"')
+    throw new ModManifestError('dialog_llm: manifest.json missing required field "id"')
   }
   if (typeof manifest.name !== 'string' || manifest.name.length === 0) {
     throw new ModManifestError('dialog_llm: manifest.json missing required field "name"')
@@ -22,16 +20,19 @@ function validate(): void {
 
 export async function init(registry: ModRegistryApi, _context: ModContext): Promise<void> {
   validate()
-  const panel = initLlmDialog()
+  const panel = initLlmDialog(manifest.id)
 
-  registry.registerSidebarButton({
-    id: manifest.id,
-    iconUrl,
-    templateId: 'llm-dialog',
-    onClick: () => panel.showPanel(),
+  registry.registerButton({
+    manifest: {
+      id: manifest.id,
+      label: manifest.name,
+      order: manifest.order ?? 99,
+      iconPath: iconUrl,
+      description: manifest.description,
+    },
+    onActivate: () => panel.showPanel(),
+    onDeactivate: () => panel.hidePanel(),
   })
-
-  document.addEventListener(LLM_DIALOG_OPEN_EVENT, () => panel.showPanel())
 
   await panel.restoreState()
 }

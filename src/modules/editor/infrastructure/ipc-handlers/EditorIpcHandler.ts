@@ -12,7 +12,6 @@ import type { SwitchDocument } from '../../application/use-cases/SwitchDocument'
 import type { GetOpenDocuments } from '../../application/use-cases/GetOpenDocuments'
 import type { UpdateDocumentPath } from '../../application/use-cases/UpdateDocumentPath'
 import type { ReorderDocuments } from '../../application/use-cases/ReorderDocuments'
-import type { GetAvailableButtonTemplates } from '../../application/use-cases/GetAvailableButtonTemplates'
 import type {
   OpenDocumentDto,
   SavedDocumentDto,
@@ -35,7 +34,6 @@ export class EditorIpcHandler {
     private readonly getOpenDocuments: GetOpenDocuments,
     private readonly updateDocumentPath: UpdateDocumentPath,
     private readonly reorderDocuments: ReorderDocuments,
-    private readonly getAvailableButtonTemplates: GetAvailableButtonTemplates,
     private readonly getOpenTabs: GetOpenTabs,
     private readonly getCurrentVault: GetCurrentVault
   ) {}
@@ -236,19 +234,5 @@ export class EditorIpcHandler {
         }
       }
     )
-
-    this.ipcMain.on('editor:get-available-button-templates', (event, payload: { reqId: string }) => {
-      const { reqId } = payload
-      try {
-        const dto = this.getAvailableButtonTemplates.execute()
-        event.reply('kolly:reply', { reqId, data: dto })
-      } catch (e) {
-        dialog.showMessageBox({
-          type: 'error',
-          message: (e as Error).message
-        })
-        event.reply('kolly:reply', { reqId, error: true })
-      }
-    })
   }
 }

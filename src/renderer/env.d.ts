@@ -57,14 +57,6 @@ interface TabDto {
   dirty: boolean
 }
 
-interface ButtonTemplateDto {
-  id: string
-  name: string
-  description: string
-  iconPath: string
-  action: string
-}
-
 interface OpenTabsDto {
   tabs: TabDto[]
   activeId: string | null
@@ -82,7 +74,6 @@ interface EditorApi {
   getOpenTabs: () => Promise<string[]>
   updatePath: (docId: string, newPath: string) => Promise<void>
   reorderDocuments: (ids: string[]) => Promise<void>
-  getAvailableButtonTemplates: () => Promise<{ templates: ButtonTemplateDto[] }>
 }
 
 interface BacklinkDto {
@@ -123,7 +114,7 @@ interface SearchApi {
 }
 
 interface SearchPanelStateDto {
-  activePanel: 'explorer' | 'search' | 'llm-dialog'
+  activePanel: string | null
   expandedSearchFolders: string[]
   lastSearchQuery: string
 }

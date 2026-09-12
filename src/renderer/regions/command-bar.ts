@@ -1,26 +1,18 @@
 import { showButtonTemplateDialog, type ButtonTemplateChoice } from '../ui/button-template-dialog'
-import searchIconUrl from '../assets/search-icon.svg'
-import llmIconUrl from '../assets/llm-icon.svg'
-import clusterTreeIconUrl from '../assets/cluster-tree-icon.svg'
-import filesystemIconUrl from '../assets/filesystem-icon.svg'
+import type { ModRegistry } from '../mods/registry'
 
 const commandBar = document.getElementById('command-bar') as HTMLDivElement
 const cmdAddBtn = document.querySelector('.cmd-add') as HTMLButtonElement
 const cmdAddZone = document.querySelector('.cmd-add-zone') as HTMLDivElement
 const MAX_CMD_BUTTONS = 6
 
-const iconPathMap: Record<string, string> = {
-  'assets/search-icon.svg': searchIconUrl,
-  'assets/llm-icon.svg': llmIconUrl,
-  'assets/cluster-tree-icon.svg': clusterTreeIconUrl,
-  'assets/filesystem-icon.svg': filesystemIconUrl
-}
+let buttonRegistry: ReturnType<ModRegistry['getButtonRegistry']>
 
-function createCmdButton(templateId?: string, iconSrc?: string): HTMLButtonElement {
+function createCmdButton(modId: string, iconSrc?: string): HTMLButtonElement {
   const btn = document.createElement('button')
   btn.className = 'cmd-btn'
   btn.title = ''
-  if (templateId) btn.dataset.templateId = templateId
+  btn.dataset.modId = modId
   if (iconSrc) {
     const icon = document.createElement('img')
     icon.className = 'cmd-btn-icon'
@@ -39,6 +31,22 @@ function refreshCmdBarFullState(): void {
   const count = commandBar.querySelectorAll('.cmd-btn').length
   if (count >= MAX_CMD_BUTTONS) commandBar.dataset.full = 'true'
   else delete commandBar.dataset.full
+}
+
+function persistCommandBarButtons(): void {
+  const ids = Array.from(commandBar.querySelectorAll('.cmd-btn'))
+    .map((b) => (b as HTMLElement).dataset.modId ?? '')
+    .filter((id) => id.length > 0)
+  window.api.state.setCommandBarButtons(ids).catch(() => {})
+}
+
+function updateActiveHighlight(activeModId: string | null): void {
+  const buttons = commandBar.querySelectorAll('.cmd-btn')
+  for (const btn of buttons) {
+    const el = btn as HTMLElement
+    if (el.dataset.modId === activeModId) el.dataset.active = 'true'
+    else delete el.dataset.active
+  }
 }
 
 let cmdEditMode = false
@@ -160,58 +168,35 @@ function endCmdDrag(): void {
   refreshCmdBarFullState()
 }
 
-function setPanelButtonActive(activeTpl: string): void {
-  const buttons = commandBar.querySelectorAll('.cmd-btn')
-  for (const btn of buttons) {
-    const el = btn as HTMLElement
-    const tplId = el.dataset.templateId
-    if (tplId === 'search' || tplId === 'filesystem' || tplId === 'llm-dialog') {
-      if (tplId === activeTpl) el.dataset.active = 'true'
-      else delete el.dataset.active
-    }
-  }
-}
+export function initCommandBar(registry: ModRegistry): void {
+  buttonRegistry = registry.getButtonRegistry()
 
-export function initCommandBar(): void {
   cmdAddBtn.addEventListener('click', async () => {
     const count = commandBar.querySelectorAll('.cmd-btn').length
     if (count >= MAX_CMD_BUTTONS) return
     try {
-      const result = await window.api.editor.getAvailableButtonTemplates()
+      const allMods = buttonRegistry.getRegisteredModules()
+      const choices: ButtonTemplateChoice[] = allMods.map((m) => ({
+        id: m.manifest.id,
+        name: m.manifest.label,
+        description: m.manifest.description ?? '',
+        iconPath: m.manifest.iconPath ?? '',
+      }))
       const existingIds = Array.from(commandBar.querySelectorAll('.cmd-btn')).map(
-        (b) => (b as HTMLElement).dataset.templateId ?? ''
+        (b) => (b as HTMLElement).dataset.modId ?? ''
       )
-      const choice = await showButtonTemplateDialog(result.templates as ButtonTemplateChoice[], existingIds)
+      const choice = await showButtonTemplateDialog(choices, existingIds)
       if (!choice) return
-      const iconSrc = iconPathMap[choice.iconPath]
-      commandBar.insertBefore(createCmdButton(choice.id, iconSrc), cmdAddZone)
+      const mod = allMods.find((m) => m.manifest.id === choice.id)
+      commandBar.insertBefore(createCmdButton(choice.id, mod?.manifest.iconPath), cmdAddZone)
       refreshCmdBarFullState()
-      const ids = Array.from(commandBar.querySelectorAll('.cmd-btn')).map(
-        (b) => (b as HTMLElement).dataset.templateId ?? 'default'
-      )
-      try {
-        await window.api.state.setCommandBarButtons(ids)
-      } catch {
-        // ignore persistence error
-      }
+      persistCommandBarButtons()
     } catch (e) {
       alert((e as Error).message)
     }
   })
 
   refreshCmdBarFullState()
-
-  const iconMap: Record<string, string> = {
-    'search': searchIconUrl,
-    'llm-dialog': llmIconUrl,
-    'cluster-tree': clusterTreeIconUrl,
-    'filesystem': filesystemIconUrl
-  }
-  commandBar.querySelectorAll('.cmd-btn').forEach((btn) => {
-    const tplId = (btn as HTMLElement).dataset.templateId
-    const icon = btn.querySelector('.cmd-btn-icon') as HTMLImageElement | null
-    if (tplId && icon && iconMap[tplId]) icon.src = iconMap[tplId]
-  })
 
   commandBar.addEventListener('mousedown', (e) => {
     const btn = cmdBtnFromTarget(e.target)
@@ -241,20 +226,19 @@ export function initCommandBar(): void {
       if (btn) {
         btn.remove()
         refreshCmdBarFullState()
+        persistCommandBarButtons()
       }
     } else if (!cmdEditMode) {
       const btn = target.closest('.cmd-btn') as HTMLButtonElement | null
       if (btn) {
-        const tplId = btn.dataset.templateId
-        if (tplId === 'search') {
-          setPanelButtonActive('search')
-          document.dispatchEvent(new CustomEvent('kollymd:open-search'))
-        } else if (tplId === 'filesystem') {
-          setPanelButtonActive('filesystem')
-          document.dispatchEvent(new CustomEvent('kollymd:open-explorer'))
-        } else if (tplId === 'llm-dialog') {
-          setPanelButtonActive('llm-dialog')
-          document.dispatchEvent(new CustomEvent('kollymd:open-llm-dialog'))
+        const modId = btn.dataset.modId
+        if (modId) {
+          try {
+            buttonRegistry.setActive(modId)
+            updateActiveHighlight(modId)
+          } catch {
+            // mod not found — ignore
+          }
         }
       }
     }
@@ -315,4 +299,52 @@ export function initCommandBar(): void {
     if (cmdDrag) endCmdDrag()
     else cmdCancelPress()
   })
+}
+
+export async function renderCommandBarButtons(registry: ModRegistry): Promise<void> {
+  const br = registry.getButtonRegistry()
+  const allMods = br.getRegisteredModules()
+
+  let enabledIds: string[]
+  try {
+    enabledIds = await window.api.state.getCommandBarButtons()
+  } catch {
+    enabledIds = []
+  }
+  if (enabledIds.length === 0) {
+    enabledIds = allMods.map((m) => m.manifest.id)
+  }
+
+  for (const id of enabledIds) {
+    const mod = allMods.find((m) => m.manifest.id === id)
+    if (!mod) continue
+    const btn = createCmdButton(mod.manifest.id, mod.manifest.iconPath)
+    commandBar.insertBefore(btn, cmdAddZone)
+  }
+  refreshCmdBarFullState()
+
+  try {
+    const state = await window.api.state.getSearchPanelState()
+    const activeId = state.activePanel
+    if (activeId && allMods.some((m) => m.manifest.id === activeId)) {
+      br.setActive(activeId)
+      updateActiveHighlight(activeId)
+    } else {
+      const firstMod = allMods[0]
+      if (firstMod) {
+        br.setActive(firstMod.manifest.id)
+        updateActiveHighlight(firstMod.manifest.id)
+      }
+    }
+  } catch {
+    const firstMod = allMods[0]
+    if (firstMod) {
+      try {
+        br.setActive(firstMod.manifest.id)
+        updateActiveHighlight(firstMod.manifest.id)
+      } catch {
+        // no mods available
+      }
+    }
+  }
 }

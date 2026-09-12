@@ -19,7 +19,7 @@
     "lint:style": "npm run lint:style-css && npm run lint:style-assets && npm run lint:style-deps",
     "new-module": "node scripts/new-module.mjs",
     "build:main": "tsc -p tsconfig.main.json",
-    "build": "npm run build:main && vite build",
+    "build": "vite build && npm run build:main",
     "dev": "npm run build:main && concurrently -k \"tsc -p tsconfig.main.json --watch\" \"vite\" \"wait-on tcp:5173 && cross-env NODE_ENV=development electron .\"",
     "start": "npm run build && electron .",
     "dist": "npm run build && electron-builder"
