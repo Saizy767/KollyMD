@@ -7,9 +7,10 @@ import type { GetExpandedFolders } from '../../application/use-cases/GetExpanded
 import type { SetExpandedFolders } from '../../application/use-cases/SetExpandedFolders'
 import type { GetCommandBarButtons } from '../../application/use-cases/GetCommandBarButtons'
 import type { SetCommandBarButtons } from '../../application/use-cases/SetCommandBarButtons'
-import type { GetSearchPanelState } from '../../application/use-cases/GetSearchPanelState'
-import type { SetSearchPanelState } from '../../application/use-cases/SetSearchPanelState'
-import type { SearchPanelStateDto } from '../../application/use-cases/GetSearchPanelState'
+import type { GetActivePanel } from '../../application/use-cases/GetActivePanel'
+import type { SetActivePanel } from '../../application/use-cases/SetActivePanel'
+import type { GetModState } from '../../application/use-cases/GetModState'
+import type { SetModState } from '../../application/use-cases/SetModState'
 
 export class StateIpcHandler {
   constructor(
@@ -22,8 +23,10 @@ export class StateIpcHandler {
     private readonly setExpandedFolders: SetExpandedFolders,
     private readonly getCommandBarButtons: GetCommandBarButtons,
     private readonly setCommandBarButtons: SetCommandBarButtons,
-    private readonly getSearchPanelState: GetSearchPanelState,
-    private readonly setSearchPanelState: SetSearchPanelState
+    private readonly getActivePanel: GetActivePanel,
+    private readonly setActivePanel: SetActivePanel,
+    private readonly getModState: GetModState,
+    private readonly setModState: SetModState
   ) {}
 
   register(): void {
@@ -123,23 +126,51 @@ export class StateIpcHandler {
       }
     )
 
-    this.ipcMain.on('state:get-search-panel-state', (event, payload: { reqId: string }) => {
+    this.ipcMain.on('state:get-active-panel', (event, payload: { reqId: string }) => {
       const { reqId } = payload
       try {
-        const panelState = this.getSearchPanelState.execute()
-        event.reply('kolly:reply', { reqId, data: panelState })
+        const panel = this.getActivePanel.execute()
+        event.reply('kolly:reply', { reqId, data: panel })
       } catch (e) {
         event.reply('kolly:reply', { reqId, error: true })
       }
     })
 
     this.ipcMain.on(
-      'state:set-search-panel-state',
-      (event, payload: { reqId: string; args: [SearchPanelStateDto] }) => {
+      'state:set-active-panel',
+      (event, payload: { reqId: string; args: [string | null] }) => {
         const { reqId, args } = payload
-        const [panelState] = args
+        const [panel] = args
         try {
-          this.setSearchPanelState.execute(panelState)
+          this.setActivePanel.execute(panel)
+          event.reply('kolly:reply', { reqId, data: null })
+        } catch (e) {
+          event.reply('kolly:reply', { reqId, error: true })
+        }
+      }
+    )
+
+    this.ipcMain.on(
+      'state:get-mod-state',
+      (event, payload: { reqId: string; args: [string] }) => {
+        const { reqId, args } = payload
+        const [modId] = args
+        try {
+          const data = this.getModState.execute(modId)
+          event.reply('kolly:reply', { reqId, data })
+        } catch (e) {
+          event.reply('kolly:reply', { reqId, error: true })
+        }
+      }
+    )
+
+    this.ipcMain.on(
+      'state:set-mod-state',
+      (event, payload: { reqId: string; args: [string, unknown] }) => {
+        const { reqId, args } = payload
+        const [modId, data] = args
+        try {
+          this.setModState.execute(modId, data)
           event.reply('kolly:reply', { reqId, data: null })
         } catch (e) {
           event.reply('kolly:reply', { reqId, error: true })

@@ -8,7 +8,6 @@ export class WorkspaceState {
     public expandedFolders: string[] = [],
     public commandBarButtons: string[] = [],
     public activePanel: string | null = null,
-    public expandedSearchFolders: string[] = [],
-    public lastSearchQuery: string = ''
+    public modState: Record<string, unknown> = {}
   ) {}
 }

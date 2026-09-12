@@ -54,8 +54,10 @@ import {
   SetExpandedFolders,
   GetCommandBarButtons,
   SetCommandBarButtons,
-  GetSearchPanelState,
-  SetSearchPanelState,
+  GetActivePanel,
+  SetActivePanel,
+  GetModState,
+  SetModState,
   StateIpcHandler
 } from './modules/state'
 
@@ -94,8 +96,10 @@ export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow |
   const setExpandedFolders = new SetExpandedFolders(stateRepo)
   const getCommandBarButtons = new GetCommandBarButtons(stateRepo)
   const setCommandBarButtons = new SetCommandBarButtons(stateRepo)
-  const getSearchPanelState = new GetSearchPanelState(stateRepo)
-  const setSearchPanelState = new SetSearchPanelState(stateRepo)
+  const getActivePanel = new GetActivePanel(stateRepo)
+  const setActivePanel = new SetActivePanel(stateRepo)
+  const getModState = new GetModState(stateRepo)
+  const setModState = new SetModState(stateRepo)
 
   const vaultRepo = new InMemoryVaultRepository()
   const noteRepo = new FsNoteRepository()
@@ -189,8 +193,10 @@ export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow |
     setExpandedFolders,
     getCommandBarButtons,
     setCommandBarButtons,
-    getSearchPanelState,
-    setSearchPanelState
+    getActivePanel,
+    setActivePanel,
+    getModState,
+    setModState
   )
   stateIpc.register()
 

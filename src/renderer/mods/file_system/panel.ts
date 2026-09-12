@@ -289,18 +289,7 @@ function hidePanel(): void {
 
 function showPanel(): void {
   explorerPanel.hidden = false
-  window.api.state
-    .getSearchPanelState()
-    .then((state) => {
-      window.api.state
-        .setSearchPanelState({
-          activePanel: modId,
-          expandedSearchFolders: state.expandedSearchFolders,
-          lastSearchQuery: state.lastSearchQuery,
-        })
-        .catch(() => {})
-    })
-    .catch(() => {})
+  window.api.state.setActivePanel(modId).catch(() => {})
 }
 
 async function restoreState(): Promise<void> {

@@ -25,8 +25,7 @@ export class JsonStateRepository implements StateRepository {
         data.expandedFolders ?? []
       )
       state.activePanel = typeof data.activePanel === 'string' ? data.activePanel : null
-      state.expandedSearchFolders = Array.isArray(data.expandedSearchFolders) ? data.expandedSearchFolders : []
-      state.lastSearchQuery = typeof data.lastSearchQuery === 'string' ? data.lastSearchQuery : ''
+      state.modState = typeof data.modState === 'object' && data.modState !== null ? data.modState : {}
       return state
     } catch (e) {
       this.logger.warn('Failed to load state, returning empty', { filePath: this.filePath, error: (e as Error).message })
@@ -50,8 +49,7 @@ export class JsonStateRepository implements StateRepository {
           activeTabPath: state.activeTabPath,
           expandedFolders: state.expandedFolders,
           activePanel: state.activePanel,
-          expandedSearchFolders: state.expandedSearchFolders,
-          lastSearchQuery: state.lastSearchQuery
+          modState: state.modState
         },
         null,
         2

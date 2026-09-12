@@ -60,11 +60,11 @@ function setToggleIcon(btn: HTMLButtonElement, collapsed: boolean): void {
 }
 
 function saveStateImmediate(): void {
+  window.api.state.setActivePanel(modId).catch(() => {})
   window.api.state
-    .setSearchPanelState({
-      activePanel: modId,
-      expandedSearchFolders: Array.from(collapsedFolders),
-      lastSearchQuery: lastQuery,
+    .setModState(modId, {
+      expandedFolders: Array.from(collapsedFolders),
+      lastQuery,
     })
     .catch(() => {})
 }
@@ -281,9 +281,11 @@ function buildPanelDom(): void {
 
 async function restoreState(): Promise<void> {
   try {
-    const state = await window.api.state.getSearchPanelState()
+    const data = await window.api.state.getModState(modId) as { expandedFolders?: string[] } | null
     collapsedFolders.clear()
-    for (const f of state.expandedSearchFolders) collapsedFolders.add(f)
+    if (data?.expandedFolders) {
+      for (const f of data.expandedFolders) collapsedFolders.add(f)
+    }
     render()
   } catch {
     render()

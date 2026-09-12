@@ -324,8 +324,7 @@ export async function renderCommandBarButtons(registry: ModRegistry): Promise<vo
   refreshCmdBarFullState()
 
   try {
-    const state = await window.api.state.getSearchPanelState()
-    const activeId = state.activePanel
+    const activeId = await window.api.state.getActivePanel()
     if (activeId && allMods.some((m) => m.manifest.id === activeId)) {
       br.setActive(activeId)
       updateActiveHighlight(activeId)
