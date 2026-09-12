@@ -3,19 +3,11 @@ import searchIconUrl from '../assets/search-icon.svg'
 import llmIconUrl from '../assets/llm-icon.svg'
 import clusterTreeIconUrl from '../assets/cluster-tree-icon.svg'
 import filesystemIconUrl from '../assets/filesystem-icon.svg'
-import type { SearchPanelApi } from './search-panel'
-import type { LlmDialogApi } from './llm-dialog'
 
 const commandBar = document.getElementById('command-bar') as HTMLDivElement
 const cmdAddBtn = document.querySelector('.cmd-add') as HTMLButtonElement
 const cmdAddZone = document.querySelector('.cmd-add-zone') as HTMLDivElement
 const MAX_CMD_BUTTONS = 6
-
-const explorerPanel = document.getElementById('explorer') as HTMLDivElement
-const searchPanelEl = document.getElementById('search-panel') as HTMLDivElement
-const llmPanelEl = document.getElementById('llm-panel') as HTMLDivElement
-let searchPanelApiRef: SearchPanelApi | null = null
-let llmDialogApiRef: LlmDialogApi | null = null
 
 const iconPathMap: Record<string, string> = {
   'assets/search-icon.svg': searchIconUrl,
@@ -180,50 +172,7 @@ function setPanelButtonActive(activeTpl: string): void {
   }
 }
 
-function saveActivePanel(panel: 'explorer' | 'search' | 'llm-dialog'): void {
-  window.api.state
-    .getSearchPanelState()
-    .then((state) => {
-      window.api.state
-        .setSearchPanelState({
-          activePanel: panel,
-          expandedSearchFolders: state.expandedSearchFolders,
-          lastSearchQuery: state.lastSearchQuery,
-        })
-        .catch(() => {})
-    })
-    .catch(() => {})
-}
-
-function showSearchPanel(): void {
-  explorerPanel.hidden = true
-  llmPanelEl.hidden = true
-  searchPanelEl.hidden = false
-  setPanelButtonActive('search')
-  if (searchPanelApiRef) searchPanelApiRef.render()
-  saveActivePanel('search')
-}
-
-function showExplorer(): void {
-  searchPanelEl.hidden = true
-  llmPanelEl.hidden = true
-  explorerPanel.hidden = false
-  setPanelButtonActive('filesystem')
-  saveActivePanel('explorer')
-}
-
-function showLlmDialog(): void {
-  explorerPanel.hidden = true
-  searchPanelEl.hidden = true
-  llmPanelEl.hidden = false
-  setPanelButtonActive('llm-dialog')
-  if (llmDialogApiRef) llmDialogApiRef.render()
-  saveActivePanel('llm-dialog')
-}
-
-export function initCommandBar(deps: { searchPanelApi: SearchPanelApi; llmDialogApi: LlmDialogApi }): void {
-  searchPanelApiRef = deps.searchPanelApi
-  llmDialogApiRef = deps.llmDialogApi
+export function initCommandBar(): void {
   cmdAddBtn.addEventListener('click', async () => {
     const count = commandBar.querySelectorAll('.cmd-btn').length
     if (count >= MAX_CMD_BUTTONS) return
@@ -298,11 +247,14 @@ export function initCommandBar(deps: { searchPanelApi: SearchPanelApi; llmDialog
       if (btn) {
         const tplId = btn.dataset.templateId
         if (tplId === 'search') {
-          showSearchPanel()
+          setPanelButtonActive('search')
+          document.dispatchEvent(new CustomEvent('kollymd:open-search'))
         } else if (tplId === 'filesystem') {
-          showExplorer()
+          setPanelButtonActive('filesystem')
+          document.dispatchEvent(new CustomEvent('kollymd:open-explorer'))
         } else if (tplId === 'llm-dialog') {
-          showLlmDialog()
+          setPanelButtonActive('llm-dialog')
+          document.dispatchEvent(new CustomEvent('kollymd:open-llm-dialog'))
         }
       }
     }
@@ -363,21 +315,4 @@ export function initCommandBar(deps: { searchPanelApi: SearchPanelApi; llmDialog
     if (cmdDrag) endCmdDrag()
     else cmdCancelPress()
   })
-
-  window.api.state
-    .getSearchPanelState()
-    .then((state) => {
-      if (state.activePanel === 'search') {
-        explorerPanel.hidden = true
-        llmPanelEl.hidden = true
-        searchPanelEl.hidden = false
-        setPanelButtonActive('search')
-      } else if (state.activePanel === 'llm-dialog') {
-        explorerPanel.hidden = true
-        searchPanelEl.hidden = true
-        llmPanelEl.hidden = false
-        setPanelButtonActive('llm-dialog')
-      }
-    })
-    .catch(() => {})
 }

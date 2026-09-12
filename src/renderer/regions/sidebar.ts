@@ -1,4 +1,5 @@
 import { getSelectedFolder, getVaultRootPath, getDisplayPath, setDisplayPath } from '../state'
+import type { ModRegistry } from '../mods/registry'
 
 const sidebarResizer = document.getElementById('sidebar-resizer') as HTMLDivElement
 const vaultPathEl = document.getElementById('vault-path') as HTMLHeadingElement
@@ -108,5 +109,41 @@ export function initSidebar(): void {
   sidebarResizer.addEventListener('dblclick', () => {
     setSidebarWidth(SIDEBAR_DEFAULT)
     window.api.state.setSidebarWidth(SIDEBAR_DEFAULT).catch(() => {})
+  })
+}
+
+export function renderModSidebarButtons(registry: ModRegistry): void {
+  const commandBar = document.getElementById('command-bar')
+  if (!commandBar) return
+
+  commandBar.querySelectorAll('.mod-sidebar-btn').forEach((btn) => btn.remove())
+
+  const addZone = commandBar.querySelector('.cmd-add-zone')
+
+  registry.getSidebarButtons().forEach((button) => {
+    const btn = document.createElement('button')
+    btn.className = 'cmd-btn mod-sidebar-btn'
+    btn.title = ''
+    btn.dataset.modButtonId = button.id
+    if (button.templateId) btn.dataset.templateId = button.templateId
+    if (button.iconUrl) {
+      const icon = document.createElement('img')
+      icon.className = 'cmd-btn-icon'
+      icon.src = button.iconUrl
+      icon.alt = ''
+      btn.appendChild(icon)
+    }
+    const del = document.createElement('span')
+    del.className = 'cmd-delete'
+    del.textContent = '−'
+    btn.appendChild(del)
+    if (!button.templateId) {
+      btn.addEventListener('click', () => button.onClick())
+    }
+    if (addZone) {
+      commandBar.insertBefore(btn, addZone)
+    } else {
+      commandBar.appendChild(btn)
+    }
   })
 }

@@ -1,44 +1,36 @@
 /// <reference path="./env.d.ts" />
 
 import { initCommandBar } from './regions/command-bar'
-import { initSidebar } from './regions/sidebar'
+import { initSidebar, renderModSidebarButtons } from './regions/sidebar'
 import { initEditor } from './regions/editor'
 import type { EditorApi } from './regions/editor'
 import { initTabs } from './regions/tabs'
 import type { TabsApi } from './regions/tabs'
-import { initExplorer } from './regions/explorer'
-import type { ExplorerApi } from './regions/explorer'
-import { initSearchPanel } from './regions/search-panel'
-import { initLlmDialog } from './regions/llm-dialog'
+import { ModRegistry } from './mods/registry'
 
 initSidebar()
 
 let tabsApi!: TabsApi
-let explorerApi!: ExplorerApi
 
 const editorApi: EditorApi = initEditor({
   getActiveTab: () => tabsApi.activeTab(),
   setDirty: (v) => tabsApi.setDirty(v),
   openFile: (p) => tabsApi.openFile(p),
-  loadExplorer: () => explorerApi.loadExplorer(),
+  loadExplorer: async () => { document.dispatchEvent(new CustomEvent('kollymd:explorer-refresh')) },
 })
 
 tabsApi = initTabs({
   getEditorContent: editorApi.getEditorContent,
   setEditorContent: editorApi.setEditorContent,
   loadBacklinks: editorApi.loadBacklinks,
-  refreshActiveHighlight: () => explorerApi.refreshActiveHighlight(),
+  refreshActiveHighlight: () => { document.dispatchEvent(new CustomEvent('kollymd:explorer-refresh-highlight')) },
 })
 
-explorerApi = initExplorer({
-  editorApi,
-  tabsApi,
-})
-
-const searchPanelApi = initSearchPanel({ tabsApi })
-const llmDialogApi = initLlmDialog({})
-
-initCommandBar({ searchPanelApi, llmDialogApi })
+initCommandBar()
 
 tabsApi.updateDocStatus()
-explorerApi.loadCurrentVault()
+
+const modRegistry = new ModRegistry()
+modRegistry.loadAll({ openFile: (p) => tabsApi.openFile(p), editorApi, tabsApi })
+  .then(() => renderModSidebarButtons(modRegistry))
+  .catch(() => {})

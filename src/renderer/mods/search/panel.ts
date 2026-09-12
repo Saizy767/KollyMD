@@ -1,19 +1,15 @@
-import rightArrowUrl from '../assets/right-arrow.svg'
-import bottomArrowUrl from '../assets/bottom-arrow.svg'
-import { pathDirname } from '../utils/path'
-import type { TabsApi } from './tabs'
+import './panel.css'
+import rightArrowUrl from './right-arrow.svg'
+import bottomArrowUrl from './bottom-arrow.svg'
+import { pathDirname } from '../../utils/path'
+import type { ModContext } from '../types'
 
-interface SearchPanelDeps {
-  tabsApi: TabsApi
+export interface SearchPanelHandle {
+  showPanel: () => void
+  restoreState: () => Promise<void>
 }
 
-export interface SearchPanelApi {
-  render: () => void
-  clear: () => void
-  getLastQuery: () => string
-}
-
-let deps: SearchPanelDeps
+let openFile: (filePath: string) => Promise<void>
 let panelEl: HTMLDivElement
 let inputEl: HTMLInputElement
 let resultsEl: HTMLDivElement
@@ -61,16 +57,20 @@ function setToggleIcon(btn: HTMLButtonElement, collapsed: boolean): void {
   }
 }
 
+function saveStateImmediate(): void {
+  window.api.state
+    .setSearchPanelState({
+      activePanel: 'search',
+      expandedSearchFolders: Array.from(collapsedFolders),
+      lastSearchQuery: lastQuery,
+    })
+    .catch(() => {})
+}
+
 function scheduleSaveState(): void {
   if (saveStateTimer) clearTimeout(saveStateTimer)
   saveStateTimer = setTimeout(() => {
-    window.api.state
-      .setSearchPanelState({
-        activePanel: 'search',
-        expandedSearchFolders: Array.from(collapsedFolders),
-        lastSearchQuery: lastQuery,
-      })
-      .catch(() => {})
+    saveStateImmediate()
   }, 500)
 }
 
@@ -84,16 +84,6 @@ function scheduleRender(): void {
 function render(): void {
   if (renderTimer) clearTimeout(renderTimer)
   void doRender()
-}
-
-function clear(): void {
-  lastQuery = ''
-  inputEl.value = ''
-  render()
-}
-
-function getLastQuery(): string {
-  return lastQuery
 }
 
 async function doRender(): Promise<void> {
@@ -235,7 +225,7 @@ function buildEntryNode(
     }
 
     card.addEventListener('click', () => {
-      void deps.tabsApi.openFile(path)
+      void openFile(path)
     })
     li.appendChild(card)
   }
@@ -243,9 +233,31 @@ function buildEntryNode(
   return li
 }
 
+function hideOtherPanels(): void {
+  const explorerEl = document.getElementById('explorer')
+  if (explorerEl) explorerEl.hidden = true
+  const llmEl = document.getElementById('llm-panel')
+  if (llmEl) llmEl.hidden = true
+}
+
+function showPanel(): void {
+  hideOtherPanels()
+  panelEl.hidden = false
+  render()
+  saveStateImmediate()
+}
+
 function buildPanelDom(): void {
-  panelEl = document.getElementById('search-panel') as HTMLDivElement
-  panelEl.replaceChildren()
+  panelEl = document.createElement('div')
+  panelEl.id = 'search-panel'
+  panelEl.hidden = true
+
+  const explorerEl = document.getElementById('explorer')
+  if (explorerEl) {
+    explorerEl.after(panelEl)
+  } else {
+    document.getElementById('sidebar')?.appendChild(panelEl)
+  }
 
   inputEl = document.createElement('input')
   inputEl.id = 'search-panel-input'
@@ -269,23 +281,29 @@ function buildPanelDom(): void {
   })
 }
 
-export function initSearchPanel(d: SearchPanelDeps): SearchPanelApi {
-  if (initialized) return { render, clear, getLastQuery }
+async function restoreState(): Promise<void> {
+  try {
+    const state = await window.api.state.getSearchPanelState()
+    collapsedFolders.clear()
+    for (const f of state.expandedSearchFolders) collapsedFolders.add(f)
+    if (state.activePanel === 'search') {
+      hideOtherPanels()
+      panelEl.hidden = false
+      render()
+    } else {
+      render()
+    }
+  } catch {
+    render()
+  }
+}
+
+export function initSearchPanel(ctx: ModContext): SearchPanelHandle {
+  if (initialized) return { showPanel, restoreState }
   initialized = true
-  deps = d
+  openFile = ctx.openFile
 
   buildPanelDom()
 
-  window.api.state
-    .getSearchPanelState()
-    .then((state) => {
-      collapsedFolders.clear()
-      for (const f of state.expandedSearchFolders) collapsedFolders.add(f)
-      render()
-    })
-    .catch(() => {
-      render()
-    })
-
-  return { render, clear, getLastQuery }
+  return { showPanel, restoreState }
 }

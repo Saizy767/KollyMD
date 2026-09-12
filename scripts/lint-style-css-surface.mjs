@@ -25,11 +25,13 @@ const violations = []
 
 const cssFiles = findFiles(RENDERER, '.css')
 const STYLES_DIR = join(RENDERER, 'styles')
+const MODS_DIR = join(RENDERER, 'mods')
 for (const f of cssFiles) {
   if (f === join(RENDERER, 'styles.css')) continue
   if (f.startsWith(STYLES_DIR + sep)) continue
+  if (f.startsWith(MODS_DIR + sep)) continue
   violations.push(
-    `${relative(ROOT, f)}: extra CSS file (only styles.css or styles/ folder allowed)`
+    `${relative(ROOT, f)}: extra CSS file (only styles.css, styles/ folder, or mods/ allowed)`
   )
 }
 

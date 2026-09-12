@@ -1,5 +1,5 @@
-import type { VaultRepository, NoteRepository } from '../../../vault'
-import { VaultNotOpenError } from '../../../vault'
+import type { VaultRepository, NoteRepository } from '../../../../../../modules/vault'
+import { VaultNotOpenError } from '../../../../../../modules/vault'
 import type { SearchEntryDto } from '../dto'
 
 const SNIPPET_RADIUS = 300

@@ -1,29 +1,34 @@
-import rightArrowUrl from '../assets/right-arrow.svg'
-import bottomArrowUrl from '../assets/bottom-arrow.svg'
-import { basename, pathBasename, ensureMdExtension } from '../utils/path'
-import { customPrompt } from '../ui/prompt-dialog'
+import './panel.css'
+import rightArrowUrl from './right-arrow.svg'
+import bottomArrowUrl from './bottom-arrow.svg'
+import { basename, pathBasename, ensureMdExtension } from '../../utils/path'
+import { customPrompt } from '../../ui/prompt-dialog'
 import {
   getVaultRootPath, setVaultRootPath,
   getSelectedFolder, setSelectedFolder,
   getExpandedFolders, getNodeMap,
   setActiveDocId,
-} from '../state'
-import { updateSelectedFolderDisplay, getVaultPathEl } from './sidebar'
-import { initExplorerWatch } from './explorer-watch'
-import type { EditorApi } from './editor'
-import type { TabsApi } from './tabs'
+} from '../../state'
+import { updateSelectedFolderDisplay, getVaultPathEl } from '../../regions/sidebar'
+import { initExplorerWatch } from './watch'
+import type { EditorApi } from '../../regions/editor'
+import type { TabsApi } from '../../regions/tabs'
+import type { ModContext } from '../types'
 
-const explorerTree = document.getElementById('explorer-tree') as HTMLUListElement
-const explorerStatus = document.getElementById('explorer-status') as HTMLSpanElement
-const explorerPanel = document.getElementById('explorer') as HTMLDivElement
-const selectDirBtn = document.getElementById('select-dir') as HTMLButtonElement
-
-interface ExplorerDeps {
-  editorApi: EditorApi
-  tabsApi: TabsApi
+export interface ExplorerHandle {
+  showPanel: () => void
+  restoreState: () => Promise<void>
+  loadExplorer: () => Promise<void>
+  refreshActiveHighlight: () => void
+  loadCurrentVault: () => Promise<void>
 }
 
-let deps: ExplorerDeps
+let editorApi: EditorApi
+let tabsApi: TabsApi
+let explorerTree: HTMLUListElement
+let explorerPanel: HTMLDivElement
+let explorerStatus: HTMLSpanElement
+let selectDirBtn: HTMLButtonElement
 
 let saveFoldersTimer: ReturnType<typeof setTimeout> | null = null
 function scheduleSaveExpandedFolders(): void {
@@ -117,7 +122,7 @@ function renderEntry(entry: NoteEntryDto): HTMLLIElement {
     const span = document.createElement('span')
     span.textContent = entry.name.toLowerCase().endsWith('.md') ? entry.name.slice(0, -3) : entry.name
     span.addEventListener('click', () => {
-      deps.tabsApi.openFile(entry.path)
+      tabsApi.openFile(entry.path)
     })
     span.addEventListener('contextmenu', (e) => {
       e.preventDefault()
@@ -146,7 +151,7 @@ function refreshAllMarkers(): void {
 function refreshActiveHighlight(): void {
   const prev = explorerTree.querySelectorAll('li[data-active="true"]')
   for (const li of prev) li.removeAttribute('data-active')
-  const active = deps.tabsApi.activeFilePath()
+  const active = tabsApi.activeFilePath()
   if (active) {
     const li = getNodeMap().get(active)
     if (li) li.dataset.active = 'true'
@@ -243,22 +248,22 @@ async function loadCurrentVault(): Promise<void> {
         console.warn('Failed to restore expanded folders', (e as Error).message)
       }
       await loadExplorer()
-      await deps.tabsApi.restoreTabs()
+      await tabsApi.restoreTabs()
       try {
         const activePath = await window.api.state.getActiveTabPath()
         if (activePath) {
-          const tabs = deps.tabsApi.getTabs()
+          const tabs = tabsApi.getTabs()
           for (const [docId, tab] of tabs) {
             if (tab.path === activePath) {
               setActiveDocId(docId)
               break
             }
           }
-          deps.tabsApi.loadActiveBuffer()
-          deps.tabsApi.updateDocStatus()
-          deps.tabsApi.renderTabs()
+          tabsApi.loadActiveBuffer()
+          tabsApi.updateDocStatus()
+          tabsApi.renderTabs()
           refreshActiveHighlight()
-          deps.editorApi.loadBacklinks()
+          await editorApi.loadBacklinks()
         }
       } catch (e) {
         console.warn('Failed to restore active tab', (e as Error).message)
@@ -276,22 +281,89 @@ async function loadCurrentVault(): Promise<void> {
   }
 }
 
-export interface ExplorerApi {
-  loadExplorer: () => Promise<void>
-  refreshActiveHighlight: () => void
-  loadCurrentVault: () => Promise<void>
+function hideOtherPanels(): void {
+  const searchPanel = document.getElementById('search-panel')
+  if (searchPanel) searchPanel.hidden = true
+  const llmPanel = document.getElementById('llm-panel')
+  if (llmPanel) llmPanel.hidden = true
 }
 
-export function initExplorer(d: ExplorerDeps): ExplorerApi {
-  deps = d
+function setPanelButtonActive(): void {
+  const buttons = document.querySelectorAll('#command-bar .cmd-btn')
+  for (const btn of buttons) {
+    const el = btn as HTMLElement
+    const tplId = el.dataset.templateId
+    if (tplId === 'search' || tplId === 'filesystem' || tplId === 'llm-dialog') {
+      if (tplId === 'filesystem') el.dataset.active = 'true'
+      else delete el.dataset.active
+    }
+  }
+}
+
+function showPanel(): void {
+  hideOtherPanels()
+  explorerPanel.hidden = false
+  setPanelButtonActive()
+  window.api.state
+    .getSearchPanelState()
+    .then((state) => {
+      window.api.state
+        .setSearchPanelState({
+          activePanel: 'explorer',
+          expandedSearchFolders: state.expandedSearchFolders,
+          lastSearchQuery: state.lastSearchQuery,
+        })
+        .catch(() => {})
+    })
+    .catch(() => {})
+}
+
+async function restoreState(): Promise<void> {
+  try {
+    const state = await window.api.state.getSearchPanelState()
+    if (state.activePanel === 'explorer') {
+      hideOtherPanels()
+      explorerPanel.hidden = false
+      setPanelButtonActive()
+    }
+  } catch {
+    // state unavailable — explorer stays visible by default
+  }
+}
+
+function buildPanelDom(): void {
+  explorerPanel = document.createElement('div')
+  explorerPanel.id = 'explorer'
+
+  explorerTree = document.createElement('ul')
+  explorerTree.id = 'explorer-tree'
+  explorerPanel.appendChild(explorerTree)
+
+  const commandBar = document.getElementById('command-bar')
+  if (commandBar) {
+    commandBar.after(explorerPanel)
+  } else {
+    document.getElementById('sidebar')?.appendChild(explorerPanel)
+  }
+
+  explorerStatus = document.getElementById('explorer-status') as HTMLSpanElement
+  selectDirBtn = document.getElementById('select-dir') as HTMLButtonElement
+}
+
+export function initExplorer(ctx: ModContext): ExplorerHandle {
+  editorApi = ctx.editorApi
+  tabsApi = ctx.tabsApi
+
+  buildPanelDom()
 
   const watch = initExplorerWatch({
+    explorerTree,
     renderEntry,
     refreshActiveHighlight,
     refreshAllMarkers,
     setFolderButtonContent,
-    editorApi: d.editorApi,
-    tabsApi: d.tabsApi,
+    editorApi,
+    tabsApi,
   })
 
   selectDirBtn.addEventListener('click', async () => {
@@ -323,5 +395,5 @@ export function initExplorer(d: ExplorerDeps): ExplorerApi {
     watch.handleWatchEvents(batch).catch((e) => console.warn('watch error', (e as Error).message))
   })
 
-  return { loadExplorer, refreshActiveHighlight, loadCurrentVault }
+  return { showPanel, restoreState, loadExplorer, refreshActiveHighlight, loadCurrentVault }
 }

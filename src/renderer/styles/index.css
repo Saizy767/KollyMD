@@ -2,9 +2,7 @@
 @import "./buttons.css";
 @import "./sidebar.css";
 @import "./command-bar.css";
-@import "./explorer.css";
-@import "./search-panel.css";
-@import "./llm-dialog.css";
 @import "./tabs.css";
 @import "./editor.css";
 @import "./prompt.css";
+@import "./mods.css";

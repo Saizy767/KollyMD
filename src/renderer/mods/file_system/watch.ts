@@ -1,17 +1,16 @@
-import { pathDirname, pathBasename } from '../utils/path'
+import { pathDirname, pathBasename } from '../../utils/path'
 import {
   getVaultRootPath,
   getSelectedFolder, setSelectedFolder,
   getExpandedFolders, getNodeMap,
   getActiveDocId,
-} from '../state'
-import { updateSelectedFolderDisplay } from './sidebar'
-import type { EditorApi } from './editor'
-import type { TabsApi } from './tabs'
-
-const explorerTree = document.getElementById('explorer-tree') as HTMLUListElement
+} from '../../state'
+import { updateSelectedFolderDisplay } from '../../regions/sidebar'
+import type { EditorApi } from '../../regions/editor'
+import type { TabsApi } from '../../regions/tabs'
 
 interface ExplorerWatchDeps {
+  explorerTree: HTMLUListElement
   renderEntry: (entry: NoteEntryDto) => HTMLLIElement
   refreshActiveHighlight: () => void
   refreshAllMarkers: () => void
@@ -42,7 +41,7 @@ function insertNode(path: string, isDir: boolean): void {
     }
     parentUl = ul
   } else {
-    parentUl = explorerTree
+    parentUl = deps.explorerTree
   }
   const name = pathBasename(path)
   const entry: NoteEntryDto = { path, name, isDirectory: isDir, children: [] }
@@ -170,7 +169,7 @@ async function handleUnlink(entryPath: string, isDir: boolean): Promise<void> {
   if (wasActive) {
     const parentPath = pathDirname(entryPath)
     const parentLi = parentPath ? getNodeMap().get(parentPath) : null
-    const parentUl = parentLi ? (parentLi.querySelector('ul') as HTMLUListElement | null) : explorerTree
+    const parentUl = parentLi ? (parentLi.querySelector('ul') as HTMLUListElement | null) : deps.explorerTree
     if (parentUl) {
       const children = Array.from(parentUl.children) as HTMLLIElement[]
       const idx = children.findIndex(c => c.dataset.path === entryPath)

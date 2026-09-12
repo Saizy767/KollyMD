@@ -6,6 +6,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
 const RENDERER = join(ROOT, 'src', 'renderer')
 const ASSETS_DIR = join(RENDERER, 'assets')
+const MODS_DIR = join(RENDERER, 'mods')
 
 const RASTER_EXTS = ['.png', '.jpg', '.jpeg', '.gif', '.ico', '.bmp', '.webp', '.avif']
 const FONT_EXTS = ['.woff', '.woff2', '.ttf', '.otf', '.eot']
@@ -35,7 +36,8 @@ for (const f of rasterFiles) {
 const svgFiles = findFiles(RENDERER, ['.svg'])
 for (const f of svgFiles) {
   if (f.startsWith(ASSETS_DIR + sep)) continue
-  violations.push(`${relative(ROOT, f)}: SVG outside assets/ (SVG icons must live in src/renderer/assets/)`)
+  if (f.startsWith(MODS_DIR + sep)) continue
+  violations.push(`${relative(ROOT, f)}: SVG outside assets/ or mods/ (SVG icons must live in src/renderer/assets/ or a mod folder)`)
 }
 
 const fontFiles = findFiles(RENDERER, FONT_EXTS)

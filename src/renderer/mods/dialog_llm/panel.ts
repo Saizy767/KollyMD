@@ -1,9 +1,8 @@
-interface LlmDialogDeps {}
+import './panel.css'
 
-export interface LlmDialogApi {
-  render: () => void
-  clear: () => void
-  getLastQuery: () => string
+export interface LlmDialogHandle {
+  showPanel: () => void
+  restoreState: () => Promise<void>
 }
 
 interface ChatMessage {
@@ -17,7 +16,6 @@ let inputEl: HTMLInputElement
 let sendBtn: HTMLButtonElement
 let statusEl: HTMLSpanElement
 
-let lastQuery = ''
 const messages: ChatMessage[] = []
 let initialized = false
 
@@ -44,29 +42,50 @@ function render(): void {
   statusEl.textContent = ''
 }
 
-function clear(): void {
-  lastQuery = ''
-  inputEl.value = ''
-  messages.length = 0
-  render()
-}
-
-function getLastQuery(): string {
-  return lastQuery
-}
-
 function sendMessage(): void {
   const text = inputEl.value.trim()
   if (!text) return
   messages.push({ role: 'user', text })
-  lastQuery = ''
   inputEl.value = ''
   renderMessages()
 }
 
+function hideOtherPanels(): void {
+  const explorerEl = document.getElementById('explorer')
+  if (explorerEl) explorerEl.hidden = true
+  const searchPanel = document.getElementById('search-panel')
+  if (searchPanel) searchPanel.hidden = true
+}
+
+function showPanel(): void {
+  hideOtherPanels()
+  panelEl.hidden = false
+  render()
+  window.api.state
+    .getSearchPanelState()
+    .then((state) => {
+      window.api.state
+        .setSearchPanelState({
+          activePanel: 'llm-dialog',
+          expandedSearchFolders: state.expandedSearchFolders,
+          lastSearchQuery: state.lastSearchQuery,
+        })
+        .catch(() => {})
+    })
+    .catch(() => {})
+}
+
 function buildPanelDom(): void {
-  panelEl = document.getElementById('llm-panel') as HTMLDivElement
-  panelEl.replaceChildren()
+  panelEl = document.createElement('div')
+  panelEl.id = 'llm-panel'
+  panelEl.hidden = true
+
+  const footer = document.getElementById('sidebar-footer')
+  if (footer) {
+    footer.before(panelEl)
+  } else {
+    document.getElementById('sidebar')?.appendChild(panelEl)
+  }
 
   messagesEl = document.createElement('div')
   messagesEl.id = 'llm-dialog-messages'
@@ -93,10 +112,6 @@ function buildPanelDom(): void {
   panelEl.appendChild(statusEl)
   panelEl.appendChild(inputBar)
 
-  inputEl.addEventListener('input', () => {
-    lastQuery = inputEl.value
-  })
-
   inputEl.addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
       e.preventDefault()
@@ -109,11 +124,23 @@ function buildPanelDom(): void {
   })
 }
 
-export function initLlmDialog(deps: LlmDialogDeps): LlmDialogApi {
-  void deps
-  if (initialized) return { render, clear, getLastQuery }
+async function restoreState(): Promise<void> {
+  try {
+    const state = await window.api.state.getSearchPanelState()
+    if (state.activePanel === 'llm-dialog') {
+      hideOtherPanels()
+      panelEl.hidden = false
+      render()
+    }
+  } catch {
+    // state unavailable — panel stays hidden
+  }
+}
+
+export function initLlmDialog(): LlmDialogHandle {
+  if (initialized) return { showPanel, restoreState }
   initialized = true
   buildPanelDom()
   render()
-  return { render, clear, getLastQuery }
+  return { showPanel, restoreState }
 }

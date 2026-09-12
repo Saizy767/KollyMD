@@ -28,8 +28,8 @@ for (const file of allFiles) {
   const content = readFileSync(file, 'utf-8')
   const lines = content.split('\n')
   const relFile = relative(SRC, file)
-  const fileModuleMatch = relFile.match(/^modules\/([^/]+)\//)
-  const fileModule = fileModuleMatch ? fileModuleMatch[1] : null
+  const fileModuleMatch = relFile.match(/^(?:modules\/([^/]+)|renderer\/mods\/([^/]+)\/server)\//)
+  const fileModule = fileModuleMatch ? (fileModuleMatch[1] || fileModuleMatch[2]) : null
 
   lines.forEach((line, i) => {
     const importMatch = line.match(/from\s+['"]([^'"]+)['"]/)
@@ -40,10 +40,10 @@ for (const file of allFiles) {
     const resolved = resolve(dirname(file), importPath)
     const relResolved = relative(SRC, resolved)
     const targetMatch = relResolved.match(
-      /^modules\/([^/]+)\/(domain|application|infrastructure)\//
+      /^(?:modules\/([^/]+)|renderer\/mods\/([^/]+)\/server)\/(domain|application|infrastructure)\//
     )
     if (targetMatch) {
-      const targetModule = targetMatch[1]
+      const targetModule = targetMatch[1] || targetMatch[2]
       if (fileModule !== targetModule) {
         violations.push(
           `${relative(ROOT, file)}:${i + 1} imports "${importPath}" into ${targetModule}/${targetMatch[2]} (use ${targetModule} index.ts)`

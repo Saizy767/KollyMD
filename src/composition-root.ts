@@ -39,7 +39,7 @@ import {
   CreateNoteFromLink,
   KnowledgeIpcHandler
 } from './modules/knowledge'
-import { SearchNotes, SearchIpcHandler, SearchEntries, SearchEntriesIpcHandler } from './modules/search'
+import { SearchNotes, SearchIpcHandler, SearchEntries, SearchEntriesIpcHandler } from './renderer/mods/search/server'
 import {
   JsonStateRepository,
   GetLastVault,
