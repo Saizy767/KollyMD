@@ -14,7 +14,5 @@ export { GetCommandBarButtons } from './application/use-cases/GetCommandBarButto
 export { SetCommandBarButtons } from './application/use-cases/SetCommandBarButtons'
 export { GetActivePanel } from './application/use-cases/GetActivePanel'
 export { SetActivePanel } from './application/use-cases/SetActivePanel'
-export { GetModState } from './application/use-cases/GetModState'
-export { SetModState } from './application/use-cases/SetModState'
 export { JsonStateRepository } from './infrastructure/repositories/JsonStateRepository'
 export { StateIpcHandler } from './infrastructure/ipc-handlers/StateIpcHandler'

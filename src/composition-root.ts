@@ -56,8 +56,6 @@ import {
   SetCommandBarButtons,
   GetActivePanel,
   SetActivePanel,
-  GetModState,
-  SetModState,
   StateIpcHandler
 } from './modules/state'
 
@@ -98,8 +96,6 @@ export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow |
   const setCommandBarButtons = new SetCommandBarButtons(stateRepo)
   const getActivePanel = new GetActivePanel(stateRepo)
   const setActivePanel = new SetActivePanel(stateRepo)
-  const getModState = new GetModState(stateRepo)
-  const setModState = new SetModState(stateRepo)
 
   const vaultRepo = new InMemoryVaultRepository()
   const noteRepo = new FsNoteRepository()
@@ -194,9 +190,7 @@ export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow |
     getCommandBarButtons,
     setCommandBarButtons,
     getActivePanel,
-    setActivePanel,
-    getModState,
-    setModState
+    setActivePanel
   )
   stateIpc.register()
 

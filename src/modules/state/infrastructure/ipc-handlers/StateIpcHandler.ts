@@ -9,8 +9,6 @@ import type { GetCommandBarButtons } from '../../application/use-cases/GetComman
 import type { SetCommandBarButtons } from '../../application/use-cases/SetCommandBarButtons'
 import type { GetActivePanel } from '../../application/use-cases/GetActivePanel'
 import type { SetActivePanel } from '../../application/use-cases/SetActivePanel'
-import type { GetModState } from '../../application/use-cases/GetModState'
-import type { SetModState } from '../../application/use-cases/SetModState'
 
 export class StateIpcHandler {
   constructor(
@@ -24,9 +22,7 @@ export class StateIpcHandler {
     private readonly getCommandBarButtons: GetCommandBarButtons,
     private readonly setCommandBarButtons: SetCommandBarButtons,
     private readonly getActivePanel: GetActivePanel,
-    private readonly setActivePanel: SetActivePanel,
-    private readonly getModState: GetModState,
-    private readonly setModState: SetModState
+    private readonly setActivePanel: SetActivePanel
   ) {}
 
   register(): void {
@@ -143,34 +139,6 @@ export class StateIpcHandler {
         const [panel] = args
         try {
           this.setActivePanel.execute(panel)
-          event.reply('kolly:reply', { reqId, data: null })
-        } catch (e) {
-          event.reply('kolly:reply', { reqId, error: true })
-        }
-      }
-    )
-
-    this.ipcMain.on(
-      'state:get-mod-state',
-      (event, payload: { reqId: string; args: [string] }) => {
-        const { reqId, args } = payload
-        const [modId] = args
-        try {
-          const data = this.getModState.execute(modId)
-          event.reply('kolly:reply', { reqId, data })
-        } catch (e) {
-          event.reply('kolly:reply', { reqId, error: true })
-        }
-      }
-    )
-
-    this.ipcMain.on(
-      'state:set-mod-state',
-      (event, payload: { reqId: string; args: [string, unknown] }) => {
-        const { reqId, args } = payload
-        const [modId, data] = args
-        try {
-          this.setModState.execute(modId, data)
           event.reply('kolly:reply', { reqId, data: null })
         } catch (e) {
           event.reply('kolly:reply', { reqId, error: true })

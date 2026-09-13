@@ -1,4 +1,4 @@
-import type { ButtonModule } from '../../shared/domain/buttons/ButtonModule'
+import type { ButtonModule } from './button-module'
 
 export type ModId = string
 

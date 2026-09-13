@@ -6,8 +6,8 @@ import type {
   ModManifest,
   ModRegistryApi,
 } from './types'
-import { ButtonRegistry } from '../modules/buttons/ButtonRegistry'
-import type { ButtonModule } from '../../shared/domain/buttons/ButtonModule'
+import { ButtonRegistry } from './button-registry'
+import type { ButtonModule } from './button-module'
 
 type ModEntryMap = Record<string, () => Promise<ModEntry>>
 

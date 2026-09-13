@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { ModRegistry } from './registry'
 import type { ModContext, ModEntry, ModRegistryApi } from './types'
-import type { ButtonModule } from '../../shared/domain/buttons/ButtonModule'
+import type { ButtonModule } from './button-module'
 
 const mockContext: ModContext = {
   openFile: vi.fn(),

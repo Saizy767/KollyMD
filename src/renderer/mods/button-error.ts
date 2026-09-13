@@ -1,4 +1,4 @@
-import { DomainError } from './DomainError'
+import { DomainError } from '../../shared/domain/errors/DomainError'
 
 export class ButtonAlreadyRegisteredError extends DomainError {
   readonly code = 'BUTTON_ALREADY_REGISTERED'

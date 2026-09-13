@@ -1,5 +1,5 @@
-import type { ButtonModule } from '../../../shared/domain/buttons/ButtonModule'
-import { ButtonAlreadyRegisteredError, ButtonNotFoundError } from '../../../shared/domain/errors/ButtonError'
+import type { ButtonModule } from './button-module'
+import { ButtonAlreadyRegisteredError, ButtonNotFoundError } from './button-error'
 
 export class ButtonRegistry {
   private readonly modules = new Map<string, ButtonModule>()

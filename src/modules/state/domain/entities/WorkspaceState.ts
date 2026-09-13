@@ -7,7 +7,6 @@ export class WorkspaceState {
     public activeTabPath: string | null = null,
     public expandedFolders: string[] = [],
     public commandBarButtons: string[] = [],
-    public activePanel: string | null = null,
-    public modState: Record<string, unknown> = {}
+    public activePanel: string | null = null
   ) {}
 }

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest'
-import { ButtonRegistry } from './ButtonRegistry'
-import { ButtonAlreadyRegisteredError, ButtonNotFoundError } from '../../../shared/domain/errors/ButtonError'
-import type { ButtonModule } from '../../../shared/domain/buttons/ButtonModule'
-import { DomainError } from '../../../shared/domain/errors/DomainError'
+import { ButtonRegistry } from './button-registry'
+import { ButtonAlreadyRegisteredError, ButtonNotFoundError } from './button-error'
+import type { ButtonModule } from './button-module'
+import { DomainError } from '../../shared/domain/errors/DomainError'
 
 function makeModule(id: string, order = 0, hooks?: Partial<Pick<ButtonModule, 'onRegister' | 'onActivate' | 'onDeactivate'>>): ButtonModule {
   return {
