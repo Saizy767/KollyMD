@@ -1,5 +1,5 @@
-import type { DocumentRepository } from '../../domain/interfaces/DocumentRepository'
-import { TabNotFoundError } from '../../domain/errors/EditorErrors'
+import type { DocumentRepository } from '@editor/domain/interfaces/DocumentRepository'
+import { TabNotFoundError } from '@editor/domain/errors/EditorErrors'
 
 export class SwitchDocument {
   constructor(private readonly docRepo: DocumentRepository) {}

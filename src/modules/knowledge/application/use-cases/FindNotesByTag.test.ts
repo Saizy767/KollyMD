@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { FindNotesByTag } from './FindNotesByTag'
-import { Vault, VaultRepository, NoteRepository, NoteContent, VaultNotOpenError } from '../../../vault'
+import { Vault, VaultRepository, NoteRepository, NoteContent, VaultNotOpenError } from '@vault'
 
 class FakeVaultRepo implements VaultRepository {
   private vault: Vault | null = null

@@ -1,7 +1,7 @@
 import './panel.css'
 import rightArrowUrl from './right-arrow.svg'
 import bottomArrowUrl from './bottom-arrow.svg'
-import { pathDirname } from '../../utils/path'
+import { pathDirname } from '@renderer/utils/path'
 import type { ModContext } from '../types'
 
 export interface SearchPanelHandle {

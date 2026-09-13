@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { DomainError } from '../../../../shared/domain/errors/DomainError'
+import { DomainError } from '@shared/domain/errors/DomainError'
 import { InvalidVaultPathError, VaultNotOpenError, NoteNotFoundError, NoteNameCollisionError, EntryNotFoundError } from './VaultErrors'
 
 describe('VaultErrors', () => {

@@ -1,8 +1,13 @@
 import { defineConfig } from 'vitest/config'
+import viteConfig from './vite.config'
 
 export default defineConfig({
+  ...viteConfig,
+  root: process.cwd(),
   test: {
-    include: ['src/**/*.test.ts'],
-    environment: 'node'
-  }
+    exclude: ['**/node_modules/**', '**/dist/**'],
+    deps: {
+      inline: [/.*mod-sdk.*/, /.*mods\/.*\/server.*/],
+    },
+  },
 })

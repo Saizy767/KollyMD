@@ -28,6 +28,33 @@ const domainFiles = allFiles.filter((f) => {
 })
 const violations = []
 
+const aliasMap = {
+  '@shared/': join(SRC, 'shared/'),
+  '@vault/': join(SRC, 'modules/vault/'),
+  '@editor/': join(SRC, 'modules/editor/'),
+  '@knowledge/': join(SRC, 'modules/knowledge/'),
+  '@state/': join(SRC, 'modules/state/'),
+  '@renderer/': join(SRC, 'renderer/'),
+  '@search-server/': join(SRC, 'renderer/mods/search/server/'),
+}
+const exactAlias = {
+  '@vault': join(SRC, 'modules/vault/index.ts'),
+  '@editor': join(SRC, 'modules/editor/index.ts'),
+  '@knowledge': join(SRC, 'modules/knowledge/index.ts'),
+  '@state': join(SRC, 'modules/state/index.ts'),
+  '@mod-sdk': join(SRC, 'mod-sdk/index.ts'),
+}
+
+function resolveAlias(importPath) {
+  if (exactAlias[importPath]) return exactAlias[importPath]
+  for (const [prefix, target] of Object.entries(aliasMap)) {
+    if (importPath.startsWith(prefix)) {
+      return join(target, importPath.slice(prefix.length))
+    }
+  }
+  return null
+}
+
 for (const file of domainFiles) {
   const content = readFileSync(file, 'utf-8')
   const lines = content.split('\n')
@@ -37,14 +64,20 @@ for (const file of domainFiles) {
     if (!importMatch) return
     const importPath = importMatch[1]
 
-    if (!importPath.startsWith('.')) {
-      violations.push(
-        `${relative(ROOT, file)}:${i + 1} imports bare package "${importPath}" (domain must be pure)`
-      )
-      return
+    let resolved
+    if (importPath.startsWith('.')) {
+      resolved = resolve(dirname(file), importPath)
+    } else {
+      const aliasResolved = resolveAlias(importPath)
+      if (!aliasResolved) {
+        violations.push(
+          `${relative(ROOT, file)}:${i + 1} imports bare package "${importPath}" (domain must be pure)`
+        )
+        return
+      }
+      resolved = aliasResolved
     }
 
-    const resolved = resolve(dirname(file), importPath)
     const relResolved = relative(SRC, resolved)
 
     if (relResolved.includes('/infrastructure/')) {

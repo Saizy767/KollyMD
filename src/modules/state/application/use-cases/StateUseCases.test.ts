@@ -9,8 +9,8 @@ import { GetExpandedFolders } from './GetExpandedFolders'
 import { SetExpandedFolders } from './SetExpandedFolders'
 import { GetSidebarWidth } from './GetSidebarWidth'
 import { SetSidebarWidth } from './SetSidebarWidth'
-import { WorkspaceState } from '../../domain/entities/WorkspaceState'
-import type { StateRepository } from '../../domain/interfaces/StateRepository'
+import { WorkspaceState } from '@state/domain/entities/WorkspaceState'
+import type { StateRepository } from '@state/domain/interfaces/StateRepository'
 
 class FakeStateRepo implements StateRepository {
   state = new WorkspaceState()

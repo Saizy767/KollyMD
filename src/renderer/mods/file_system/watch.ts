@@ -1,13 +1,13 @@
-import { pathDirname, pathBasename } from '../../utils/path'
+import { pathDirname, pathBasename } from '@renderer/utils/path'
 import {
   getVaultRootPath,
   getSelectedFolder, setSelectedFolder,
   getExpandedFolders, getNodeMap,
   getActiveDocId,
-} from '../../state'
-import { updateSelectedFolderDisplay } from '../../regions/sidebar'
-import type { EditorApi } from '../../regions/editor'
-import type { TabsApi } from '../../regions/tabs'
+} from '@renderer/state'
+import { updateSelectedFolderDisplay } from '@renderer/regions/sidebar'
+import type { EditorApi } from '@renderer/regions/editor'
+import type { TabsApi } from '@renderer/regions/tabs'
 
 interface ExplorerWatchDeps {
   explorerTree: HTMLUListElement

@@ -1,6 +1,6 @@
 import { IpcMain, dialog } from 'electron'
-import type { SearchEntries } from '../../application/use-cases/SearchEntries'
-import type { SearchEntryDto } from '../../application/dto'
+import type { SearchEntries } from '@search-server/application/use-cases/SearchEntries'
+import type { SearchEntryDto } from '@search-server/application/dto'
 
 export class SearchEntriesIpcHandler {
   constructor(

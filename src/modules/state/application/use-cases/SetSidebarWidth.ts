@@ -1,4 +1,4 @@
-import type { StateRepository } from '../../domain/interfaces/StateRepository'
+import type { StateRepository } from '@state/domain/interfaces/StateRepository'
 
 export class SetSidebarWidth {
   constructor(private readonly repo: StateRepository) {}

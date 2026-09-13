@@ -1,5 +1,5 @@
-import type { VaultRepository, NoteRepository } from '../../../../../../modules/vault'
-import { VaultNotOpenError } from '../../../../../../modules/vault'
+import type { VaultRepository, NoteRepository } from '@mod-sdk'
+import { VaultNotOpenError } from '@mod-sdk'
 import type { SearchResultDto } from '../dto'
 
 const CONTEXT = 40

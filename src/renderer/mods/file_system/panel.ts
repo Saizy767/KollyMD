@@ -1,18 +1,18 @@
 import './panel.css'
 import rightArrowUrl from './right-arrow.svg'
 import bottomArrowUrl from './bottom-arrow.svg'
-import { basename, pathBasename, ensureMdExtension } from '../../utils/path'
-import { customPrompt } from '../../ui/prompt-dialog'
+import { basename, pathBasename, ensureMdExtension } from '@renderer/utils/path'
+import { customPrompt } from '@renderer/ui/prompt-dialog'
 import {
   getVaultRootPath, setVaultRootPath,
   getSelectedFolder, setSelectedFolder,
   getExpandedFolders, getNodeMap,
   setActiveDocId,
-} from '../../state'
-import { updateSelectedFolderDisplay, getVaultPathEl } from '../../regions/sidebar'
+} from '@renderer/state'
+import { updateSelectedFolderDisplay, getVaultPathEl } from '@renderer/regions/sidebar'
 import { initExplorerWatch } from './watch'
-import type { EditorApi } from '../../regions/editor'
-import type { TabsApi } from '../../regions/tabs'
+import type { EditorApi } from '@renderer/regions/editor'
+import type { TabsApi } from '@renderer/regions/tabs'
 import type { ModContext } from '../types'
 
 export interface ExplorerHandle {

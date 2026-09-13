@@ -1,5 +1,5 @@
-import type { VaultRepository, NoteRepository } from '../../../vault'
-import { VaultNotOpenError } from '../../../vault'
+import type { VaultRepository, NoteRepository } from '@vault'
+import { VaultNotOpenError } from '@vault'
 import type { ResolvedLinkDto } from '../dto'
 
 export class ResolveLink {

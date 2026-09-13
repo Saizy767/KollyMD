@@ -1,4 +1,4 @@
-import type { DocumentRepository } from '../../domain/interfaces/DocumentRepository'
+import type { DocumentRepository } from '@editor/domain/interfaces/DocumentRepository'
 
 export class ReorderDocuments {
   constructor(private readonly docRepo: DocumentRepository) {}

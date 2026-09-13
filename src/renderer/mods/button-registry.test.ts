@@ -2,7 +2,7 @@ import { describe, it, expect, vi } from 'vitest'
 import { ButtonRegistry } from './button-registry'
 import { ButtonAlreadyRegisteredError, ButtonNotFoundError } from './button-error'
 import type { ButtonModule } from './button-module'
-import { DomainError } from '../../shared/domain/errors/DomainError'
+import { DomainError } from '@shared/domain/errors/DomainError'
 
 function makeModule(id: string, order = 0, hooks?: Partial<Pick<ButtonModule, 'onRegister' | 'onActivate' | 'onDeactivate'>>): ButtonModule {
   return {

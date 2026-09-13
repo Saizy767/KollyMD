@@ -1,6 +1,6 @@
 import chokidar from 'chokidar'
-import type { FileWatcher } from '../../domain/interfaces/FileWatcher'
-import { WatchEvent } from '../../domain/entities/WatchEvent'
+import type { FileWatcher } from '@vault/domain/interfaces/FileWatcher'
+import { WatchEvent } from '@vault/domain/entities/WatchEvent'
 
 const DEBOUNCE_MS = 150
 

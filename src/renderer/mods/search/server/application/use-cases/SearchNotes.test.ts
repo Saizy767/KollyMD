@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { SearchNotes } from './SearchNotes'
-import { Vault, VaultRepository, NoteRepository, NoteContent, VaultNotOpenError } from '../../../../../../modules/vault'
+import { Vault, VaultRepository, NoteRepository, NoteContent, VaultNotOpenError } from '@mod-sdk'
 
 class FakeVaultRepo implements VaultRepository {
   private vault: Vault | null = null

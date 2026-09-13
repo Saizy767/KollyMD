@@ -1,6 +1,6 @@
-import type { DocumentRepository } from '../../domain/interfaces/DocumentRepository'
-import type { NoteRepository } from '../../../vault'
-import { NoDocumentOpenError, DocumentHasNoPathError } from '../../domain/errors/EditorErrors'
+import type { DocumentRepository } from '@editor/domain/interfaces/DocumentRepository'
+import type { NoteRepository } from '@vault'
+import { NoDocumentOpenError, DocumentHasNoPathError } from '@editor/domain/errors/EditorErrors'
 
 export class SaveDocument {
   constructor(

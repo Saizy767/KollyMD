@@ -1,8 +1,8 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import type { StateRepository } from '../../domain/interfaces/StateRepository'
-import { WorkspaceState } from '../../domain/entities/WorkspaceState'
-import { Logger } from '../../../../shared/infrastructure/Logger'
+import type { StateRepository } from '@state/domain/interfaces/StateRepository'
+import { WorkspaceState } from '@state/domain/entities/WorkspaceState'
+import { Logger } from '@shared/infrastructure/Logger'
 
 export class JsonStateRepository implements StateRepository {
   private readonly filePath: string

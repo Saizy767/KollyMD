@@ -5,10 +5,10 @@ import { SaveDocument } from './SaveDocument'
 import { CloseDocument } from './CloseDocument'
 import { SwitchDocument } from './SwitchDocument'
 import { MarkDirty } from './MarkDirty'
-import { Document } from '../../domain/entities/Document'
-import { NoDocumentOpenError, DocumentHasNoPathError, TabNotFoundError } from '../../domain/errors/EditorErrors'
-import type { DocumentRepository } from '../../domain/interfaces/DocumentRepository'
-import type { NoteRepository } from '../../../vault'
+import { Document } from '@editor/domain/entities/Document'
+import { NoDocumentOpenError, DocumentHasNoPathError, TabNotFoundError } from '@editor/domain/errors/EditorErrors'
+import type { DocumentRepository } from '@editor/domain/interfaces/DocumentRepository'
+import type { NoteRepository } from '@vault'
 
 class FakeDocRepo implements DocumentRepository {
   docs: Document[] = []

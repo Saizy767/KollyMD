@@ -1,9 +1,9 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import type { NoteRepository, NoteContent, FolderDto } from '../../domain/interfaces/NoteRepository'
-import { NoteEntry } from '../../domain/entities/NoteEntry'
-import { NoteNotFoundError, NoteNameCollisionError, EntryNotFoundError } from '../../domain/errors/VaultErrors'
-import { Logger } from '../../../../shared/infrastructure/Logger'
+import type { NoteRepository, NoteContent, FolderDto } from '@vault/domain/interfaces/NoteRepository'
+import { NoteEntry } from '@vault/domain/entities/NoteEntry'
+import { NoteNotFoundError, NoteNameCollisionError, EntryNotFoundError } from '@vault/domain/errors/VaultErrors'
+import { Logger } from '@shared/infrastructure/Logger'
 
 export class FsNoteRepository implements NoteRepository {
   private readonly logger = new Logger()

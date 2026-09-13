@@ -1,4 +1,4 @@
-import type { StateRepository } from '../../domain/interfaces/StateRepository'
+import type { StateRepository } from '@state/domain/interfaces/StateRepository'
 
 export class SetCommandBarButtons {
   constructor(private readonly repo: StateRepository) {}

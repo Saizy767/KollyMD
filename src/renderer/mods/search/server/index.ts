@@ -1,5 +1,5 @@
 import type { IpcMain } from 'electron'
-import type { VaultRepository, NoteRepository } from '../../../../modules/vault'
+import type { VaultRepository, NoteRepository } from '@mod-sdk'
 import { SearchNotes } from './application/use-cases/SearchNotes'
 import { SearchEntries } from './application/use-cases/SearchEntries'
 import { SearchIpcHandler } from './infrastructure/ipc-handlers/SearchIpcHandler'

@@ -1,6 +1,6 @@
-import type { DocumentRepository } from '../../domain/interfaces/DocumentRepository'
-import type { NoteRepository } from '../../../vault'
-import { Document } from '../../domain/entities/Document'
+import type { DocumentRepository } from '@editor/domain/interfaces/DocumentRepository'
+import type { NoteRepository } from '@vault'
+import { Document } from '@editor/domain/entities/Document'
 import type { OpenDocumentDto } from '../dto'
 
 export class OpenDocument {

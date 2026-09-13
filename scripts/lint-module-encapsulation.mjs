@@ -24,21 +24,64 @@ function findTsFiles(dir) {
 const allFiles = findTsFiles(SRC)
 const violations = []
 
+const aliasMap = {
+  '@shared/': join(SRC, 'shared/'),
+  '@vault/': join(SRC, 'modules/vault/'),
+  '@editor/': join(SRC, 'modules/editor/'),
+  '@knowledge/': join(SRC, 'modules/knowledge/'),
+  '@state/': join(SRC, 'modules/state/'),
+  '@renderer/': join(SRC, 'renderer/'),
+  '@search-server/': join(SRC, 'renderer/mods/search/server/'),
+}
+const exactAlias = {
+  '@vault': join(SRC, 'modules/vault/index.ts'),
+  '@editor': join(SRC, 'modules/editor/index.ts'),
+  '@knowledge': join(SRC, 'modules/knowledge/index.ts'),
+  '@state': join(SRC, 'modules/state/index.ts'),
+  '@mod-sdk': join(SRC, 'mod-sdk/index.ts'),
+}
+
+function resolveAlias(importPath) {
+  if (exactAlias[importPath]) return exactAlias[importPath]
+  for (const [prefix, target] of Object.entries(aliasMap)) {
+    if (importPath.startsWith(prefix)) {
+      return join(target, importPath.slice(prefix.length))
+    }
+  }
+  return null
+}
+
 for (const file of allFiles) {
   const content = readFileSync(file, 'utf-8')
   const lines = content.split('\n')
   const relFile = relative(SRC, file)
   const fileModuleMatch = relFile.match(/^(?:modules\/([^/]+)|renderer\/mods\/([^/]+)\/server)\//)
   const fileModule = fileModuleMatch ? (fileModuleMatch[1] || fileModuleMatch[2]) : null
+  const isServerModFile = /^renderer\/mods\/[^/]+\/server\//.test(relFile)
 
   lines.forEach((line, i) => {
     const importMatch = line.match(/from\s+['"]([^'"]+)['"]/)
     if (!importMatch) return
     const importPath = importMatch[1]
-    if (!importPath.startsWith('.')) return
 
-    const resolved = resolve(dirname(file), importPath)
+    let resolved
+    if (importPath.startsWith('.')) {
+      resolved = resolve(dirname(file), importPath)
+    } else {
+      const aliasResolved = resolveAlias(importPath)
+      if (!aliasResolved) return
+      resolved = aliasResolved
+    }
+
     const relResolved = relative(SRC, resolved)
+
+    if (isServerModFile && (relResolved.startsWith('modules/') || relResolved.startsWith('shared/'))) {
+      violations.push(
+        `${relative(ROOT, file)}:${i + 1} server mod imports directly from "${relResolved}" (use @mod-sdk instead)`
+      )
+      return
+    }
+
     const targetMatch = relResolved.match(
       /^(?:modules\/([^/]+)|renderer\/mods\/([^/]+)\/server)\/(domain|application|infrastructure)\//
     )

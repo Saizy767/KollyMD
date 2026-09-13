@@ -1,7 +1,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { app } from 'electron'
-import { Logger } from '../../../../shared/infrastructure/Logger'
+import { Logger } from '@mod-sdk'
 
 export class ModStateRepository {
   private readonly filePath: string

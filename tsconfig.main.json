@@ -10,6 +10,7 @@
     "src/modules/**/*",
     "src/shared/**/*",
     "src/renderer/mods/*/server/**/*",
+    "src/mod-sdk/**/*",
     "src/composition-root.ts"
   ]
 }

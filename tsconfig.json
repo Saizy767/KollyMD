@@ -14,6 +14,20 @@
     "noImplicitReturns": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+    "paths": {
+      "@mod-sdk": ["./src/mod-sdk/index.ts"],
+      "@shared/*": ["./src/shared/*"],
+      "@vault": ["./src/modules/vault/index.ts"],
+      "@vault/*": ["./src/modules/vault/*"],
+      "@editor": ["./src/modules/editor/index.ts"],
+      "@editor/*": ["./src/modules/editor/*"],
+      "@knowledge": ["./src/modules/knowledge/index.ts"],
+      "@knowledge/*": ["./src/modules/knowledge/*"],
+      "@state": ["./src/modules/state/index.ts"],
+      "@state/*": ["./src/modules/state/*"],
+      "@renderer/*": ["./src/renderer/*"],
+      "@search-server/*": ["./src/renderer/mods/search/server/*"]
+    }
   }
 }
