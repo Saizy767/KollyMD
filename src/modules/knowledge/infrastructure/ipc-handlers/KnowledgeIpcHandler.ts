@@ -1,6 +1,7 @@
 import { IpcMain, dialog } from 'electron'
 import type { FindBacklinks } from '@knowledge/application/use-cases/FindBacklinks'
 import type { FindNotesByTag } from '@knowledge/application/use-cases/FindNotesByTag'
+import type { FindImageReferences } from '@knowledge/application/use-cases/FindImageReferences'
 import type { ResolveLink } from '@knowledge/application/use-cases/ResolveLink'
 import type { CreateNoteFromLink } from '@knowledge/application/use-cases/CreateNoteFromLink'
 import type {
@@ -15,6 +16,7 @@ export class KnowledgeIpcHandler {
     private readonly ipcMain: IpcMain,
     private readonly findBacklinks: FindBacklinks,
     private readonly findNotesByTag: FindNotesByTag,
+    private readonly findImageReferences: FindImageReferences,
     private readonly resolveLink: ResolveLink,
     private readonly createNoteFromLink: CreateNoteFromLink
   ) {}
@@ -45,6 +47,24 @@ export class KnowledgeIpcHandler {
         const [tag] = args
         try {
           const dto: NoteRefDto[] = this.findNotesByTag.execute(tag)
+          event.reply('kolly:reply', { reqId, data: dto })
+        } catch (e) {
+          dialog.showMessageBox({
+            type: 'error',
+            message: (e as Error).message
+          })
+          event.reply('kolly:reply', { reqId, error: true })
+        }
+      }
+    )
+
+    this.ipcMain.on(
+      'knowledge:find-image-references',
+      (event, payload: { reqId: string; args: [string] }) => {
+        const { reqId, args } = payload
+        const [imageName] = args
+        try {
+          const dto: NoteRefDto[] = this.findImageReferences.execute(imageName)
           event.reply('kolly:reply', { reqId, data: dto })
         } catch (e) {
           dialog.showMessageBox({

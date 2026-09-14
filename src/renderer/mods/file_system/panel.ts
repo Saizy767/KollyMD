@@ -84,6 +84,36 @@ function renderTree(entries: NoteEntryDto[]): HTMLUListElement {
   return ul
 }
 
+const IMAGE_EXTENSIONS = ['png', 'jpg', 'jpeg', 'gif', 'svg', 'webp']
+
+function isImageFile(name: string): boolean {
+  const ext = name.split('.').pop()?.toLowerCase() ?? ''
+  return IMAGE_EXTENSIONS.includes(ext)
+}
+
+function showImage(filePath: string): void {
+  const host = document.getElementById('editor-host')!
+  const cmEditor = host.querySelector('.cm-editor') as HTMLElement | null
+  if (cmEditor) cmEditor.hidden = true
+  const existing = host.querySelector('.image-viewer') as HTMLImageElement | null
+  if (existing) existing.remove()
+  const img = document.createElement('img')
+  img.className = 'image-viewer'
+  img.alt = basename(filePath)
+  img.src = 'file://' + encodeURI(filePath)
+  host.appendChild(img)
+  const status = document.getElementById('doc-status')
+  if (status) status.textContent = basename(filePath)
+}
+
+function hideImage(): void {
+  const host = document.getElementById('editor-host')!
+  const img = host.querySelector('.image-viewer') as HTMLImageElement | null
+  if (img) img.remove()
+  const cmEditor = host.querySelector('.cm-editor') as HTMLElement | null
+  if (cmEditor) cmEditor.hidden = false
+}
+
 function renderEntry(entry: NoteEntryDto): HTMLLIElement {
   const li = document.createElement('li')
   li.dataset.path = entry.path
@@ -124,7 +154,12 @@ function renderEntry(entry: NoteEntryDto): HTMLLIElement {
     const span = document.createElement('span')
     span.textContent = entry.name.toLowerCase().endsWith('.md') ? entry.name.slice(0, -3) : entry.name
     span.addEventListener('click', () => {
-      tabsApi.openFile(entry.path)
+      if (isImageFile(entry.name)) {
+        showImage(entry.path)
+      } else {
+        hideImage()
+        tabsApi.openFile(entry.path)
+      }
     })
     span.addEventListener('contextmenu', (e) => {
       e.preventDefault()

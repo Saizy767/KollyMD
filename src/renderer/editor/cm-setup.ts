@@ -8,13 +8,14 @@ import 'katex/dist/katex.min.css'
 import { livePreview } from './live-preview'
 import { wikiDecorations } from './wiki-decorations'
 import { mathDecorations } from './math-decorations'
+import { attachImageHandlers } from './image-handler'
 
 export function createEditorView(
   host: HTMLElement,
   initialDoc: string,
   onDocChange: (doc: string) => void
 ): EditorView {
-  return new EditorView({
+  const view = new EditorView({
     state: EditorState.create({
       doc: initialDoc,
       extensions: [
@@ -39,4 +40,6 @@ export function createEditorView(
     }),
     parent: host
   })
+  attachImageHandlers(view, host)
+  return view
 }

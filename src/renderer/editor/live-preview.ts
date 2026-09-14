@@ -2,6 +2,7 @@ import { ViewPlugin, ViewUpdate, Decoration, DecorationSet, WidgetType } from '@
 import { syntaxTree } from '@codemirror/language'
 import type { EditorView } from '@codemirror/view'
 import type { Range } from '@codemirror/state'
+import { getVaultRootPath } from '../state'
 
 class HrWidget extends WidgetType {
   toDOM(): HTMLElement {
@@ -10,6 +11,42 @@ class HrWidget extends WidgetType {
     return hr
   }
   eq(): boolean { return true }
+  ignoreEvent(): boolean { return true }
+}
+
+class ImageWidget extends WidgetType {
+  constructor(
+    readonly fileName: string,
+    readonly mode: 'block' | 'inline',
+    readonly width: number | null
+  ) {
+    super()
+  }
+
+  toDOM(): HTMLElement {
+    const img = document.createElement('img')
+    img.className = this.mode === 'block' ? 'image-block' : 'image-inline'
+    img.alt = this.fileName
+    if (this.width !== null) {
+      img.setAttribute('width', String(this.width))
+    }
+    const root = getVaultRootPath()
+    const fullPath = root ? root + '/' + this.fileName : ''
+    if (fullPath) {
+      window.api.vault.readImage(fullPath).then(dataUrl => {
+        img.src = dataUrl
+      }).catch(() => {})
+    }
+    return img
+  }
+
+  eq(other: WidgetType): boolean {
+    return other instanceof ImageWidget &&
+      this.fileName === other.fileName &&
+      this.mode === other.mode &&
+      this.width === other.width
+  }
+
   ignoreEvent(): boolean { return true }
 }
 
@@ -39,6 +76,8 @@ const STYLE_MAP: Record<string, string> = {
 const HEADING_PREFIX_RE = /^#{1,6}\s/
 
 const TAG_RE = /(?:^|\s)#([a-zA-Zа-яА-Я0-9_-]+)/gm
+
+const EMBED_RE = /!\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g
 
 const HIDE_NAMES = new Set([
   'EmphasisMark',
@@ -131,6 +170,31 @@ function buildDecorations(view: EditorView): DecorationSet {
       const tagTo = tagFrom + m[1].length + 1
       if (tagFrom > cursorLineEnd || tagTo < cursorLineStart) {
         decos.push(Decoration.mark({ class: 'tag' }).range(tagFrom, tagTo))
+      }
+    }
+  }
+
+  for (const { from, to } of view.visibleRanges) {
+    const text = view.state.doc.sliceString(from, to)
+    EMBED_RE.lastIndex = 0
+    let m: RegExpExecArray | null
+    while ((m = EMBED_RE.exec(text)) !== null) {
+      const start = from + m.index
+      const end = start + m[0].length
+      if (start > cursorLineEnd || end < cursorLineStart) {
+        const fileName = m[1].trim()
+        const modifier = m[2]?.trim() ?? ''
+        let mode: 'block' | 'inline' = 'block'
+        let width: number | null = null
+        if (modifier === 'inline') {
+          mode = 'inline'
+        } else if (/^\d+$/.test(modifier)) {
+          mode = 'inline'
+          width = parseInt(modifier, 10)
+        }
+        decos.push(
+          Decoration.replace({ widget: new ImageWidget(fileName, mode, width) }).range(start, end)
+        )
       }
     }
   }

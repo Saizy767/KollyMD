@@ -178,6 +178,23 @@
   margin: 8px 0;
 }
 
+#editor-host .image-block {
+  display: block;
+  margin: 16px auto;
+  max-width: 100%;
+}
+
+#editor-host .image-inline {
+  display: inline;
+  vertical-align: middle;
+}
+
+#editor-host .image-viewer {
+  display: block;
+  margin: 16px auto;
+  max-width: 100%;
+}
+
 #editor-host .cm-wikilink {
   color: #7aa2f7;
   cursor: pointer;

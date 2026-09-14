@@ -1,4 +1,6 @@
 import { IpcMain, dialog, BrowserWindow, Menu } from 'electron'
+import * as fs from 'fs'
+import * as path from 'path'
 import type { OpenVault } from '@vault/application/use-cases/OpenVault'
 import type { GetCurrentVault } from '@vault/application/use-cases/GetCurrentVault'
 import type { ListNotes } from '@vault/application/use-cases/ListNotes'
@@ -7,9 +9,44 @@ import type { CreateFolder } from '@vault/application/use-cases/CreateFolder'
 import type { RenameEntry } from '@vault/application/use-cases/RenameEntry'
 import type { DeleteEntry } from '@vault/application/use-cases/DeleteEntry'
 import type { ReadNote } from '@vault/application/use-cases/ReadNote'
+import type { SaveImage } from '@vault/application/use-cases/SaveImage'
 import type { FileWatcher } from '@vault/domain/interfaces/FileWatcher'
 import type { SetLastVault } from '@state'
 import type { VaultDto, NoteEntryDto, CreatedNoteDto, RenamedEntryDto } from '@vault/application/dto'
+
+const IMAGE_MIME: Record<string, string> = {
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.svg': 'image/svg+xml',
+  '.webp': 'image/webp'
+}
+
+function findFileRecursive(dir: string, targetName: string): string | null {
+  try {
+    const entries = fs.readdirSync(dir)
+    for (const entry of entries) {
+      if (entry.startsWith('.')) continue
+      const fullPath = path.join(dir, entry)
+      let stat: fs.Stats
+      try {
+        stat = fs.statSync(fullPath)
+      } catch {
+        continue
+      }
+      if (stat.isDirectory()) {
+        const found = findFileRecursive(fullPath, targetName)
+        if (found) return found
+      } else if (entry === targetName) {
+        return fullPath
+      }
+    }
+  } catch {
+    // ignore
+  }
+  return null
+}
 
 export class VaultIpcHandler {
   constructor(
@@ -22,6 +59,7 @@ export class VaultIpcHandler {
     private readonly renameEntry: RenameEntry,
     private readonly deleteEntry: DeleteEntry,
     private readonly readNote: ReadNote,
+    private readonly saveImage: SaveImage,
     private readonly fileWatcher: FileWatcher,
     private readonly getMainWindow: () => BrowserWindow | null,
     private readonly setLastVault: SetLastVault
@@ -221,6 +259,57 @@ export class VaultIpcHandler {
           const content = this.readNote.execute(filePath)
           event.reply('kolly:reply', { reqId, data: content })
         } catch (e) {
+          event.reply('kolly:reply', { reqId, error: true })
+        }
+      }
+    )
+
+    this.ipcMain.on(
+      'vault:save-image',
+      async (event, payload: { reqId: string; args: [string, ArrayBuffer] }) => {
+        const { reqId, args } = payload
+        const [baseName, data] = args
+        try {
+          const dto = await this.saveImage.execute(baseName, data)
+          event.reply('kolly:reply', { reqId, data: dto })
+        } catch (e) {
+          dialog.showMessageBox({
+            type: 'error',
+            message: (e as Error).message
+          })
+          event.reply('kolly:reply', { reqId, error: true })
+        }
+      }
+    )
+
+    this.ipcMain.on(
+      'vault:read-image',
+      async (event, payload: { reqId: string; args: [string] }) => {
+        const { reqId, args } = payload
+        const [filePath] = args
+        try {
+          let actualPath = filePath
+          if (!fs.existsSync(filePath)) {
+            const vault = this.getCurrentVault.execute()
+            if (vault) {
+              const baseName = path.basename(filePath)
+              const found = findFileRecursive(vault.rootPath, baseName)
+              if (found) {
+                actualPath = found
+              } else {
+                event.reply('kolly:reply', { reqId, error: true })
+                return
+              }
+            } else {
+              event.reply('kolly:reply', { reqId, error: true })
+              return
+            }
+          }
+          const data = await fs.promises.readFile(actualPath)
+          const mime = IMAGE_MIME[path.extname(actualPath).toLowerCase()] ?? 'application/octet-stream'
+          const dataUrl = `data:${mime};base64,${data.toString('base64')}`
+          event.reply('kolly:reply', { reqId, data: dataUrl })
+        } catch {
           event.reply('kolly:reply', { reqId, error: true })
         }
       }

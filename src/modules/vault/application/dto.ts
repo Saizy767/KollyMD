@@ -21,3 +21,8 @@ export interface NoteContentDto {
   path: string
   content: string
 }
+
+export interface SavedImageDto {
+  savedFileName: string
+  path: string
+}

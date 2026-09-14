@@ -39,3 +39,11 @@ export class EntryNotFoundError extends DomainError {
     super(`Entry not found: "${path}"`)
   }
 }
+
+export class ImageSaveError extends DomainError {
+  readonly code = 'IMAGE_SAVE_ERROR'
+
+  constructor(message: string) {
+    super(message)
+  }
+}

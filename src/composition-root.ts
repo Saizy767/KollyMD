@@ -6,6 +6,7 @@ import { AppConfig } from './shared/infrastructure/AppConfig'
 import {
   InMemoryVaultRepository,
   FsNoteRepository,
+  FsImageRepository,
   ChokidarFileWatcher,
   OpenVault,
   GetCurrentVault,
@@ -15,6 +16,7 @@ import {
   RenameEntry,
   DeleteEntry,
   ReadNote,
+  SaveImage,
   VaultIpcHandler,
   Vault
 } from './modules/vault'
@@ -35,6 +37,7 @@ import {
 import {
   FindBacklinks,
   FindNotesByTag,
+  FindImageReferences,
   ResolveLink,
   CreateNoteFromLink,
   KnowledgeIpcHandler
@@ -99,6 +102,7 @@ export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow |
 
   const vaultRepo = new InMemoryVaultRepository()
   const noteRepo = new FsNoteRepository()
+  const imageRepo = new FsImageRepository()
   const fileWatcher = new ChokidarFileWatcher()
   const openVault = new OpenVault(vaultRepo)
   const getCurrentVault = new GetCurrentVault(vaultRepo)
@@ -108,6 +112,7 @@ export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow |
   const renameEntry = new RenameEntry(vaultRepo, noteRepo)
   const deleteEntry = new DeleteEntry(vaultRepo, noteRepo)
   const readNote = new ReadNote(vaultRepo, noteRepo)
+  const saveImage = new SaveImage(vaultRepo, imageRepo)
 
   const docRepo = new InMemoryDocumentRepository()
   const openDocument = new OpenDocument(docRepo, noteRepo)
@@ -123,6 +128,7 @@ export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow |
 
   const findBacklinks = new FindBacklinks(vaultRepo, noteRepo)
   const findNotesByTag = new FindNotesByTag(vaultRepo, noteRepo)
+  const findImageReferences = new FindImageReferences(vaultRepo, noteRepo)
   const resolveLink = new ResolveLink(vaultRepo, noteRepo)
   const createNoteFromLink = new CreateNoteFromLink(vaultRepo, noteRepo)
 
@@ -141,6 +147,7 @@ export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow |
     renameEntry,
     deleteEntry,
     readNote,
+    saveImage,
     fileWatcher,
     getMainWindow,
     setLastVault
@@ -168,6 +175,7 @@ export function bootstrap(ipcMain: IpcMain, getMainWindow: () => BrowserWindow |
     ipcMain,
     findBacklinks,
     findNotesByTag,
+    findImageReferences,
     resolveLink,
     createNoteFromLink
   )

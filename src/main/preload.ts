@@ -50,6 +50,9 @@ const api = {
     deleteEntry: (entryPath: string) =>
       request<void>('vault:delete-entry', entryPath),
     readNote: (filePath: string) => request<string>('vault:read-note', filePath),
+    readImage: (filePath: string) => request<string>('vault:read-image', filePath),
+    saveImage: (baseName: string, data: ArrayBuffer) =>
+      request<{ path: string }>('vault:save-image', baseName, data),
     onNoteChanged: (cb: (events: { type: string; path: string }[]) => void): (() => void) => {
       const handler = (_e: IpcRendererEvent, batch: { type: string; path: string }[]): void => cb(batch)
       ipcRenderer.on('vault:note-changed', handler)
@@ -84,6 +87,8 @@ const api = {
       request<unknown[]>('knowledge:find-backlinks', noteName),
     findNotesByTag: (tag: string) =>
       request<unknown[]>('knowledge:find-notes-by-tag', tag),
+    findImageReferences: (imageName: string) =>
+      request<unknown[]>('knowledge:find-image-references', imageName),
     resolveLink: (noteName: string) =>
       request<{ path: string } | null>('knowledge:resolve-link', noteName),
     createNoteFromLink: (noteName: string) =>

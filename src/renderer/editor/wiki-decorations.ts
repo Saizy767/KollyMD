@@ -40,6 +40,10 @@ function buildDecorations(view: EditorView): DecorationSet {
       const start = from + m.index
       const end = start + m[0].length
       if (start > cursorLineEnd || end < cursorLineStart) {
+        const charBefore = m.index > 0 ? text[m.index - 1] : ''
+        if (charBefore === '!') {
+          continue
+        }
         decos.push(
           Decoration.replace({ widget: new WikiLinkWidget(m[1].trim()) }).range(start, end)
         )

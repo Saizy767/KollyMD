@@ -29,6 +29,8 @@ interface VaultApi {
   renameEntry: (oldPath: string, newName: string) => Promise<{ path: string }>
   deleteEntry: (entryPath: string) => Promise<void>
   readNote: (filePath: string) => Promise<string>
+  readImage: (filePath: string) => Promise<string>
+  saveImage: (baseName: string, data: ArrayBuffer) => Promise<{ savedFileName: string; path: string }>
   onNoteChanged: (cb: (events: WatchEventDto[]) => void) => () => void
 }
 
@@ -89,6 +91,7 @@ interface NoteRefDto {
 interface KnowledgeApi {
   findBacklinks: (noteName: string) => Promise<BacklinkDto[]>
   findNotesByTag: (tag: string) => Promise<NoteRefDto[]>
+  findImageReferences: (imageName: string) => Promise<NoteRefDto[]>
   resolveLink: (noteName: string) => Promise<{ path: string } | null>
   createNoteFromLink: (noteName: string) => Promise<{ path: string }>
 }

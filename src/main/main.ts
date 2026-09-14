@@ -6,8 +6,8 @@ import { bootstrap } from '../composition-root'
 
 function setCspPolicy(isDev: boolean): void {
   const csp = isDev
-    ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' ws://localhost:5173 http://localhost:5173; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:"
-    : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:"
+    ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' ws://localhost:5173 http://localhost:5173; style-src 'self' 'unsafe-inline'; img-src 'self' data: file:; font-src 'self' data:"
+    : "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: file:; font-src 'self' data:"
   session.defaultSession.webRequest.onHeadersReceived((details, callback) => {
     callback({
       responseHeaders: {
@@ -25,7 +25,8 @@ function createWindow(): void {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
-      nodeIntegration: false
+      nodeIntegration: false,
+      webSecurity: false
     }
   })
 
@@ -54,6 +55,7 @@ function createWindow(): void {
 app.whenReady().then(() => {
   const isDev = process.env.NODE_ENV === 'development'
   setCspPolicy(isDev)
+
   bootstrap(ipcMain, () => BrowserWindow.getAllWindows()[0] ?? null)
   createWindow()
 
