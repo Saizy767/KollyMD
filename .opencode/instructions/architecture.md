@@ -83,13 +83,13 @@ KollyMD/
     │   ├── search/{...}/ + index.ts
     │   └── state/{...}/ + index.ts
     ├── renderer/
-    │   ├── index.html          # bare semantic HTML, links styles.css
+    │   ├── index.html          # bare semantic HTML, links styles/index.css
     │   ├── renderer.ts         # Vite entry, wires CM6 + DOM events
     │   ├── editor/             # CodeMirror 6 setup + Live Preview decorations
     │   │   ├── cm-setup.ts     # EditorState + EditorView configuration
     │   │   ├── live-preview.ts # ViewPlugin with Decoration.replace() + WidgetType
     │   │   └── wiki-decorations.ts  # [[wiki-link]] and #tag inline decorations
-    │   ├── styles.css          # single CSS surface (dark minimalist)
+    │   ├── styles/             # CSS surface: index.css @imports partials (dark minimalist)
     │   └── env.d.ts            # ambient type declarations
     └── shared/
         ├── domain/errors/      # DomainError base + specific errors

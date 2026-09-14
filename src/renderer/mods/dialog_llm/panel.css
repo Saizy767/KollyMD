@@ -1,0 +1,77 @@
+#llm-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 8px;
+  gap: 6px;
+  min-height: 0;
+}
+
+#llm-dialog-messages {
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+
+.llm-dialog-placeholder {
+  color: #666;
+  font-size: 13px;
+  padding: 12px 4px;
+}
+
+.llm-dialog-status {
+  font-size: 11px;
+  color: #888;
+  flex-shrink: 0;
+}
+
+.llm-dialog-input-bar {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.llm-dialog-input-bar #llm-dialog-input {
+  flex: 1;
+}
+
+#llm-dialog-input {
+  padding: 6px 8px;
+  background: #1e1e1e;
+  border: 1px solid #333;
+  border-radius: 4px;
+  color: #d4d4d4;
+  font: inherit;
+  font-size: 13px;
+}
+
+#llm-dialog-input:focus {
+  outline: none;
+  border-color: #0e639c;
+}
+
+#llm-dialog-input::placeholder {
+  color: #666;
+}
+
+#llm-dialog-send {
+  flex-shrink: 0;
+  padding: 6px 14px;
+}
+
+.llm-dialog-message {
+  padding: 8px 12px;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.llm-dialog-message-user {
+  background: #0e639c;
+  color: #fff;
+  align-self: flex-end;
+  margin-left: 40px;
+}

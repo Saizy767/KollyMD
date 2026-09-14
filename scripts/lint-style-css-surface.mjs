@@ -1,6 +1,6 @@
 import { fileURLToPath } from 'node:url'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
-import { join, relative, dirname } from 'node:path'
+import { join, relative, dirname, sep } from 'node:path'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(__dirname, '..')
@@ -24,10 +24,15 @@ function findFiles(dir, ext) {
 const violations = []
 
 const cssFiles = findFiles(RENDERER, '.css')
+const STYLES_DIR = join(RENDERER, 'styles')
+const MODS_DIR = join(RENDERER, 'mods')
 for (const f of cssFiles) {
-  if (!f.endsWith('styles.css')) {
-    violations.push(`${relative(ROOT, f)}: extra CSS file (only styles.css allowed)`)
-  }
+  if (f === join(RENDERER, 'styles.css')) continue
+  if (f.startsWith(STYLES_DIR + sep)) continue
+  if (f.startsWith(MODS_DIR + sep)) continue
+  violations.push(
+    `${relative(ROOT, f)}: extra CSS file (only styles.css, styles/ folder, or mods/ allowed)`
+  )
 }
 
 const htmlFiles = findFiles(RENDERER, '.html')
@@ -63,5 +68,5 @@ if (violations.length > 0) {
   for (const v of violations) console.error(`  ${v}`)
   process.exit(1)
 } else {
-  console.log('Style CSS-surface passed: single styles.css, no <style> tags, no inline styles.')
+  console.log('Style CSS-surface passed: single CSS surface (styles.css or styles/ folder), no <style> tags, no inline styles.')
 }

@@ -8,10 +8,11 @@ not UI polish.
 
 - **Runtime:** Electron 31
 - **Language:** TypeScript (strict)
-- **Renderer:** Vanilla TS, no framework, native ESM (`<script type="module">`)
-- **Bundler:** None — `tsc` compiles, no Vite/webpack
+- **Renderer:** Vanilla TS, no framework, bundled by Vite
+- **Bundler:** Vite (renderer + dev server with HMR); `tsc` for main process (CommonJS)
 - **Packager:** electron-builder
-- **Markdown parser:** `marked` (runs in main process)
+- **Editor:** CodeMirror 6 (`@codemirror/state`, `@codemirror/view`, `@codemirror/lang-markdown`) — Live Preview via custom decorations
+- **Math rendering:** KaTeX
 - **File watcher:** `chokidar`
 - **State storage:** JSON in `app.getPath('userData')`
 
@@ -53,8 +54,11 @@ npm install
 | Command             | Action                                                  |
 | ------------------- | ------------------------------------------------------- |
 | `npm run typecheck` | `tsc --noEmit` for both main and renderer configs       |
-| `npm run build`     | Compile main + renderer, copy `index.html` to `dist/`   |
-| `npm start`         | Build and launch Electron in dev mode                   |
+| `npm run lint:arch` | Architecture lint: use-case deps, encapsulation, domain purity |
+| `npm run lint:style`| Style lint: CSS surface, assets, deps                   |
+| `npm run build`     | Compile main + Vite build renderer                      |
+| `npm run dev`       | Dev mode: tsc watch + Vite dev server + Electron        |
+| `npm start`         | Build and launch Electron in production mode            |
 | `npm run dist`      | Build and package a distributable via electron-builder  |
 
 ## Download & Install
@@ -118,15 +122,16 @@ and shown via native `dialog` (main) or `alert`/`confirm`/`prompt` (renderer).
 ```
 KollyMD/
 ├── package.json
-├── tsconfig.json              # base config
-├── tsconfig.main.json         # CJS, node types, includes main/modules/shared
-├── tsconfig.renderer.json     # ESM, DOM lib, includes renderer only
+├── vite.config.ts              # Vite config for renderer bundling
+├── tsconfig.json               # base config
+├── tsconfig.main.json          # CJS, node types, includes main/modules/shared
+├── tsconfig.renderer.json      # ESM, DOM lib, includes renderer only
 ├── electron-builder.yml
 └── src/
-    ├── composition-root.ts    # manual DI assembly
+    ├── composition-root.ts     # manual DI assembly
     ├── main/
-    │   ├── main.ts            # Electron entry, BrowserWindow
-    │   └── preload.ts         # contextBridge → window.api
+    │   ├── main.ts             # Electron entry, BrowserWindow
+    │   └── preload.ts          # contextBridge → window.api
     ├── modules/
     │   ├── vault/{domain,application,infrastructure}/ + index.ts
     │   ├── editor/{...}/ + index.ts
@@ -134,24 +139,51 @@ KollyMD/
     │   ├── search/{...}/ + index.ts
     │   └── state/{...}/ + index.ts
     ├── renderer/
-    │   ├── index.html         # bare semantic HTML, zero CSS
-    │   ├── renderer.ts        # ESM entry
-    │   └── regions/           # tabs, explorer, editor, preview, search, backlinks
+    │   ├── index.html          # semantic HTML, links styles/index.css
+    │   ├── renderer.ts         # Vite entry, DI wiring for regions
+    │   ├── state.ts            # shared app state (getters/setters)
+    │   ├── env.d.ts            # ambient type declarations
+    │   ├── assets/             # SVG icons (folder arrows)
+    │   ├── editor/             # CodeMirror 6 setup + decorations
+    │   │   ├── cm-setup.ts
+    │   │   ├── live-preview.ts
+    │   │   ├── wiki-decorations.ts
+    │   │   └── math-decorations.ts
+    │   ├── regions/            # UI regions (one file per region)
+    │   │   ├── command-bar.ts
+    │   │   ├── editor.ts
+    │   │   ├── explorer.ts
+    │   │   ├── explorer-watch.ts
+    │   │   ├── sidebar.ts
+    │   │   └── tabs.ts
+    │   ├── styles/             # modular CSS (one file per region)
+    │   │   ├── index.css       # @import entry point
+    │   │   ├── base.css
+    │   │   ├── buttons.css
+    │   │   ├── sidebar.css
+    │   │   ├── command-bar.css
+    │   │   ├── explorer.css
+    │   │   ├── tabs.css
+    │   │   ├── editor.css
+    │   │   └── prompt.css
+    │   ├── ui/
+    │   │   └── prompt-dialog.ts
+    │   └── utils/
+    │       └── path.ts
     └── shared/
-        ├── domain/errors/     # DomainError base + specific errors
-        └── infrastructure/    # Logger, AppConfig
+        ├── domain/errors/      # DomainError base + specific errors
+        └── infrastructure/     # Logger, AppConfig
 ```
 
 ## UI Constraints
 
 Per `.opencode/instructions/style.md`:
 
-- Zero CSS (no files, no `<style>`, no inline styles, no frameworks)
-- No icons, images, SVG, or custom fonts — plain text and basic HTML elements only
+- Minimalist UI: Vanilla CSS with modular structure (`src/renderer/styles/`), limited SVG assets for basic navigation only. No heavy UI frameworks (Tailwind, Bootstrap) or inline styles.
 - Native OS dialogs only: `dialog` module in main, `alert`/`confirm`/`prompt` in renderer
 - Loading state: button text -> "Loading..." + `disabled`
 - Validation errors: plain text next to the field
-- Active tab marked via `data-active="true"` attribute (no visual styling)
+- Active tab marked via `data-active="true"` attribute
 
 ## Status
 

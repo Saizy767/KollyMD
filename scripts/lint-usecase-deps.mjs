@@ -23,7 +23,7 @@ function findTsFiles(dir) {
 
 const allFiles = findTsFiles(SRC)
 const useCaseFiles = allFiles.filter(
-  (f) => f.includes('/application/use-cases/') && f.includes('/modules/')
+  (f) => f.includes('/application/use-cases/') && (f.includes('/modules/') || f.includes('/mods/'))
 )
 
 const violations = []

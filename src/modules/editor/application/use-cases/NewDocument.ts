@@ -1,5 +1,5 @@
-import type { DocumentRepository } from '../../domain/interfaces/DocumentRepository'
-import { Document } from '../../domain/entities/Document'
+import type { DocumentRepository } from '@editor/domain/interfaces/DocumentRepository'
+import { Document } from '@editor/domain/entities/Document'
 import type { NewDocumentDto } from '../dto'
 
 export class NewDocument {

@@ -1,4 +1,4 @@
-import { DomainError } from '../../../../shared/domain/errors/DomainError'
+import { DomainError } from '@shared/domain/errors/DomainError'
 
 export class InvalidVaultPathError extends DomainError {
   readonly code = 'INVALID_VAULT_PATH'

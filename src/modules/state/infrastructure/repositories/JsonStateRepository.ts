@@ -1,8 +1,8 @@
 import * as fs from 'fs'
 import * as path from 'path'
-import type { StateRepository } from '../../domain/interfaces/StateRepository'
-import { WorkspaceState } from '../../domain/entities/WorkspaceState'
-import { Logger } from '../../../../shared/infrastructure/Logger'
+import type { StateRepository } from '@state/domain/interfaces/StateRepository'
+import { WorkspaceState } from '@state/domain/entities/WorkspaceState'
+import { Logger } from '@shared/infrastructure/Logger'
 
 export class JsonStateRepository implements StateRepository {
   private readonly filePath: string
@@ -16,11 +16,17 @@ export class JsonStateRepository implements StateRepository {
     try {
       const raw = fs.readFileSync(this.filePath, 'utf-8')
       const data = JSON.parse(raw)
-      return new WorkspaceState(
+      const state = new WorkspaceState(
         data.lastVaultPath ?? null,
         data.recentFiles ?? [],
-        data.openTabs ?? []
+        data.openTabs ?? [],
+        data.sidebarWidth ?? null,
+        data.activeTabPath ?? null,
+        data.expandedFolders ?? [],
+        data.commandBarButtons ?? []
       )
+      state.activePanel = typeof data.activePanel === 'string' ? data.activePanel : null
+      return state
     } catch (e) {
       this.logger.warn('Failed to load state, returning empty', { filePath: this.filePath, error: (e as Error).message })
       return new WorkspaceState()
@@ -38,7 +44,12 @@ export class JsonStateRepository implements StateRepository {
         {
           lastVaultPath: state.lastVaultPath,
           recentFiles: state.recentFiles,
-          openTabs: state.openTabs
+          openTabs: state.openTabs,
+          sidebarWidth: state.sidebarWidth,
+          activeTabPath: state.activeTabPath,
+          expandedFolders: state.expandedFolders,
+          commandBarButtons: state.commandBarButtons,
+          activePanel: state.activePanel
         },
         null,
         2

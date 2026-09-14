@@ -1,23 +1,25 @@
 import { IpcMain, dialog, BrowserWindow } from 'electron'
 import * as path from 'path'
-import type { GetCurrentVault } from '../../../vault'
-import type { GetOpenTabs } from '../../../state'
-import type { OpenDocument } from '../../application/use-cases/OpenDocument'
-import type { SaveDocument } from '../../application/use-cases/SaveDocument'
-import type { SaveAsDocument } from '../../application/use-cases/SaveAsDocument'
-import type { NewDocument } from '../../application/use-cases/NewDocument'
-import type { MarkDirty } from '../../application/use-cases/MarkDirty'
-import type { CloseDocument } from '../../application/use-cases/CloseDocument'
-import type { SwitchDocument } from '../../application/use-cases/SwitchDocument'
-import type { GetOpenDocuments } from '../../application/use-cases/GetOpenDocuments'
+import type { GetCurrentVault } from '@vault'
+import type { GetOpenTabs } from '@state'
+import type { OpenDocument } from '@editor/application/use-cases/OpenDocument'
+import type { SaveDocument } from '@editor/application/use-cases/SaveDocument'
+import type { SaveAsDocument } from '@editor/application/use-cases/SaveAsDocument'
+import type { NewDocument } from '@editor/application/use-cases/NewDocument'
+import type { MarkDirty } from '@editor/application/use-cases/MarkDirty'
+import type { CloseDocument } from '@editor/application/use-cases/CloseDocument'
+import type { SwitchDocument } from '@editor/application/use-cases/SwitchDocument'
+import type { GetOpenDocuments } from '@editor/application/use-cases/GetOpenDocuments'
+import type { UpdateDocumentPath } from '@editor/application/use-cases/UpdateDocumentPath'
+import type { ReorderDocuments } from '@editor/application/use-cases/ReorderDocuments'
 import type {
   OpenDocumentDto,
   SavedDocumentDto,
   NewDocumentDto,
   CloseDocumentDto,
   OpenTabsDto
-} from '../../application/dto'
-import { DocumentHasNoPathError } from '../../domain/errors/EditorErrors'
+} from '@editor/application/dto'
+import { DocumentHasNoPathError } from '@editor/domain/errors/EditorErrors'
 
 export class EditorIpcHandler {
   constructor(
@@ -30,6 +32,8 @@ export class EditorIpcHandler {
     private readonly closeDocument: CloseDocument,
     private readonly switchDocument: SwitchDocument,
     private readonly getOpenDocuments: GetOpenDocuments,
+    private readonly updateDocumentPath: UpdateDocumentPath,
+    private readonly reorderDocuments: ReorderDocuments,
     private readonly getOpenTabs: GetOpenTabs,
     private readonly getCurrentVault: GetCurrentVault
   ) {}
@@ -198,5 +202,37 @@ export class EditorIpcHandler {
         event.reply('kolly:reply', { reqId, error: true })
       }
     })
+
+    this.ipcMain.on(
+      'editor:update-path',
+      (event, payload: { reqId: string; args: [string, string] }) => {
+        const { reqId, args } = payload
+        const [docId, newPath] = args
+        try {
+          this.updateDocumentPath.execute(docId, newPath)
+          event.reply('kolly:reply', { reqId, data: null })
+        } catch (e) {
+          event.reply('kolly:reply', { reqId, error: true })
+        }
+      }
+    )
+
+    this.ipcMain.on(
+      'editor:reorder-documents',
+      (event, payload: { reqId: string; args: [string[]] }) => {
+        const { reqId, args } = payload
+        const [ids] = args
+        try {
+          this.reorderDocuments.execute(ids)
+          event.reply('kolly:reply', { reqId, data: null })
+        } catch (e) {
+          dialog.showMessageBox({
+            type: 'error',
+            message: (e as Error).message
+          })
+          event.reply('kolly:reply', { reqId, error: true })
+        }
+      }
+    )
   }
 }

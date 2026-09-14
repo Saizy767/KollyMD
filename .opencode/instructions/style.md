@@ -5,18 +5,22 @@ The primary focus of KollyMD is functional correctness. The frontend (Electron r
 
 ## UI Rules
 
-### 1. CSS — allowed, single file, vanilla only
-- Write CSS in exactly one external file: `src/renderer/styles.css`.
+### 1. CSS — allowed, single surface, vanilla only
+- CSS lives in ONE of two layouts:
+  - a single file `src/renderer/styles.css`, OR
+  - a single folder `src/renderer/styles/` with one entry point `styles/index.css` that `@import`s the partials (current layout).
+- In either case the CSS surface is reached from `index.html` via exactly one `<link>`. NO other CSS files anywhere in `src/renderer/`.
 - NO `<style>` tags in HTML, NO inline `style=` attributes in markup or generated DOM.
 - NO CSS frameworks or utility classes (Tailwind, Bootstrap, etc.).
-- NO CSS-in-JS, NO preprocessors, NO PostCSS.
+- NO CSS-in-JS, NO preprocessors, NO PostCSS. (`@import` is plain CSS and IS allowed for splitting the single surface.)
 - Allowed: flexbox/grid layouts, margins/padding, colors, border-radius, basic transitions. Keep it minimal and semantic.
-- The single `styles.css` is the ONLY allowed CSS surface; everything else stays unstyled semantic HTML.
+- Everything outside the chosen CSS surface stays unstyled semantic HTML.
 
-### 2. Visual Assets — text and Unicode only
-- NO SVG, NO images (PNG/JPG/etc.), NO custom fonts (`@font-face`, web fonts).
+### 2. Visual Assets — text, Unicode, and SVG icons
+- SVG icons ARE allowed as lightweight UI icons (e.g. folder expand/collapse arrows). SVG icon files live in `src/renderer/assets/` and are imported via Vite (`import url from './assets/*.svg'`). Recolor SVG `fill` to match the theme (e.g. `#d4d4d4`); do NOT use `currentColor` with `<img>`.
+- NO raster images (PNG/JPG/etc.), NO custom fonts (`@font-face`, web fonts).
 - Use plain text and basic unstyled HTML elements to display data (standard `<table>`, `<ul>`, `<li>`, `<button>`, `<input>`).
-- Unicode symbols ARE allowed as lightweight icons: `×` (close), `▸`/`▾` (expand/collapse), `●` (active marker), `⚑` (backlink/flag), etc. Do not use them as decorative emoji elsewhere.
+- Unicode symbols ARE also allowed as lightweight icons: `×` (close), `●` (active marker), `⚑` (backlink/flag), etc. Do not use them as decorative emoji elsewhere.
 
 ### 3. Native Dialogs (Electron)
 - Use **exclusively** native OS / browser dialogs to display errors, notifications, and confirmation requests.
@@ -41,12 +45,12 @@ System and form states are shown with text plus the basic `disabled`/`hidden` at
 - `[[wiki-links]]` and `#tags` are rendered as **inline clickable decorations** (`<a data-wiki>` / `<a data-tag>`) directly in the editor — always clickable, regardless of cursor position.
 - There is **no separate preview pane**. The old `#preview` div and the `marked`-based rendering pipeline are removed.
 - CM6 is bundled via Vite (see `architecture.md` Build Pipeline). The renderer is no longer "zero external imports" — it imports `@codemirror/*` packages, bundled by Vite.
-- Styling for CM6 (`.cm-editor`, `.cm-content`, widget classes) lives in `src/renderer/styles.css` alongside the rest of the UI.
+- Styling for CM6 (`.cm-editor`, `.cm-content`, widget classes) lives in the CSS surface (`src/renderer/styles/` — currently `editor.css`) alongside the rest of the UI.
 
 ## What the AI Must NOT Do (Anti-patterns)
-- Add a second CSS file or split styles across files — everything lives in `src/renderer/styles.css`.
+- Add CSS files outside the single surface (`styles.css` or the `styles/` folder). No stray `.css` anywhere else in `src/renderer/`.
 - Use `<style>` tags or inline `style=` attributes anywhere.
 - Suggest using UI component libraries (e.g., Material UI, Radix, Headless UI) or CSS frameworks (Tailwind, Bootstrap).
-- Use SVG, PNG, JPG, icon fonts, or `@font-face`.
+- Use PNG, JPG, icon fonts, or `@font-face`. (SVG icons in `src/renderer/assets/` ARE allowed — see section 2.)
 - Create custom dropdowns, selects, or modals instead of using native HTML/OS solutions.
 - Waste tokens or time generating elaborate CSS animations, glassmorphism, or decorative effects.

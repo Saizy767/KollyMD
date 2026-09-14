@@ -1,5 +1,6 @@
-import type { DocumentRepository } from '../../domain/interfaces/DocumentRepository'
-import { Document } from '../../domain/entities/Document'
+import type { DocumentRepository } from '@editor/domain/interfaces/DocumentRepository'
+import { Document } from '@editor/domain/entities/Document'
+import { TabNotFoundError } from '@editor/domain/errors/EditorErrors'
 
 export class InMemoryDocumentRepository implements DocumentRepository {
   private readonly docs = new Map<string, Document>()
@@ -46,5 +47,13 @@ export class InMemoryDocumentRepository implements DocumentRepository {
     if (doc) {
       this.docs.set(id, new Document(doc.id, path, doc.dirty))
     }
+  }
+
+  reorder(ids: string[]): void {
+    for (const id of ids) {
+      if (!this.docs.has(id)) throw new TabNotFoundError(id)
+    }
+    this.order.length = 0
+    this.order.push(...ids)
   }
 }

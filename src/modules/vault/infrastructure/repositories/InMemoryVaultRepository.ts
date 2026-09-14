@@ -1,5 +1,5 @@
-import type { VaultRepository } from '../../domain/interfaces/VaultRepository'
-import { Vault } from '../../domain/entities/Vault'
+import type { VaultRepository } from '@vault/domain/interfaces/VaultRepository'
+import { Vault } from '@vault/domain/entities/Vault'
 
 export class InMemoryVaultRepository implements VaultRepository {
   private vault: Vault | null = null

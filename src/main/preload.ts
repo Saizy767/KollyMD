@@ -48,7 +48,13 @@ const api = {
     renameEntry: (oldPath: string, newName: string) =>
       request<{ path: string }>('vault:rename-entry', oldPath, newName),
     deleteEntry: (entryPath: string) =>
-      request<void>('vault:delete-entry', entryPath)
+      request<void>('vault:delete-entry', entryPath),
+    readNote: (filePath: string) => request<string>('vault:read-note', filePath),
+    onNoteChanged: (cb: (events: { type: string; path: string }[]) => void): (() => void) => {
+      const handler = (_e: IpcRendererEvent, batch: { type: string; path: string }[]): void => cb(batch)
+      ipcRenderer.on('vault:note-changed', handler)
+      return () => { ipcRenderer.removeListener('vault:note-changed', handler) }
+    }
   },
   editor: {
     openDocument: (filePath: string) =>
@@ -67,7 +73,11 @@ const api = {
     switchDocument: (docId: string) => request<void>('editor:switch-document', docId),
     getOpenDocuments: () =>
       request<{ tabs: unknown[]; activeId: string | null }>('editor:get-open-documents'),
-    getOpenTabs: () => request<string[]>('editor:get-open-tabs')
+    getOpenTabs: () => request<string[]>('editor:get-open-tabs'),
+    updatePath: (docId: string, newPath: string) =>
+      request<void>('editor:update-path', docId, newPath),
+    reorderDocuments: (ids: string[]) =>
+      request<void>('editor:reorder-documents', ids)
   },
   knowledge: {
     findBacklinks: (noteName: string) =>
@@ -80,7 +90,22 @@ const api = {
       request<{ path: string }>('knowledge:create-note-from-link', noteName)
   },
   search: {
-    searchNotes: (query: string) => request<unknown[]>('search:search-notes', query)
+    searchNotes: (query: string) => request<unknown[]>('search:search-notes', query),
+    searchEntries: (query: string) => request<unknown[]>('search:search-entries', query)
+  },
+  state: {
+    getSidebarWidth: () => request<number | null>('state:get-sidebar-width'),
+    setSidebarWidth: (width: number) => request<void>('state:set-sidebar-width', width),
+    getActiveTabPath: () => request<string | null>('state:get-active-tab-path'),
+    setActiveTabPath: (path: string | null) => request<void>('state:set-active-tab-path', path),
+    getExpandedFolders: () => request<string[]>('state:get-expanded-folders'),
+    setExpandedFolders: (folders: string[]) => request<void>('state:set-expanded-folders', folders),
+    getCommandBarButtons: () => request<string[]>('state:get-command-bar-buttons'),
+    setCommandBarButtons: (buttonIds: string[]) => request<void>('state:set-command-bar-buttons', buttonIds),
+    getActivePanel: () => request<string | null>('state:get-active-panel'),
+    setActivePanel: (panel: string | null) => request<void>('state:set-active-panel', panel),
+    getModState: (modId: string) => request<unknown>('state:get-mod-state', modId),
+    setModState: (modId: string, data: unknown) => request<void>('state:set-mod-state', modId, data)
   }
 }
 

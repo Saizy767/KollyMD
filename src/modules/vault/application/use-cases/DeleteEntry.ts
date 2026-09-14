@@ -1,6 +1,6 @@
-import type { VaultRepository } from '../../domain/interfaces/VaultRepository'
-import type { NoteRepository } from '../../domain/interfaces/NoteRepository'
-import { VaultNotOpenError } from '../../domain/errors/VaultErrors'
+import type { VaultRepository } from '@vault/domain/interfaces/VaultRepository'
+import type { NoteRepository } from '@vault/domain/interfaces/NoteRepository'
+import { VaultNotOpenError } from '@vault/domain/errors/VaultErrors'
 
 export class DeleteEntry {
   constructor(

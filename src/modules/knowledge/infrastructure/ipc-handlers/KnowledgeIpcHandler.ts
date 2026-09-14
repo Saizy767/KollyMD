@@ -1,14 +1,14 @@
 import { IpcMain, dialog } from 'electron'
-import type { FindBacklinks } from '../../application/use-cases/FindBacklinks'
-import type { FindNotesByTag } from '../../application/use-cases/FindNotesByTag'
-import type { ResolveLink } from '../../application/use-cases/ResolveLink'
-import type { CreateNoteFromLink } from '../../application/use-cases/CreateNoteFromLink'
+import type { FindBacklinks } from '@knowledge/application/use-cases/FindBacklinks'
+import type { FindNotesByTag } from '@knowledge/application/use-cases/FindNotesByTag'
+import type { ResolveLink } from '@knowledge/application/use-cases/ResolveLink'
+import type { CreateNoteFromLink } from '@knowledge/application/use-cases/CreateNoteFromLink'
 import type {
   BacklinkDto,
   NoteRefDto,
   ResolvedLinkDto,
   CreatedNoteFromLinkDto
-} from '../../application/dto'
+} from '@knowledge/application/dto'
 
 export class KnowledgeIpcHandler {
   constructor(

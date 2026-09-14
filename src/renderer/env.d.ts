@@ -1,3 +1,8 @@
+declare module '*.svg' {
+  const src: string
+  export default src
+}
+
 interface VaultDto {
   rootPath: string
 }
@@ -9,6 +14,11 @@ interface NoteEntryDto {
   children: NoteEntryDto[]
 }
 
+interface WatchEventDto {
+  type: 'add' | 'unlink' | 'change' | 'addDir' | 'unlinkDir'
+  path: string
+}
+
 interface VaultApi {
   openVault: () => Promise<VaultDto | null>
   getCurrentVault: () => Promise<VaultDto | null>
@@ -18,6 +28,8 @@ interface VaultApi {
   contextMenu: (entryPath: string, kind: 'root' | 'folder' | 'file') => Promise<{ action: string } | null>
   renameEntry: (oldPath: string, newName: string) => Promise<{ path: string }>
   deleteEntry: (entryPath: string) => Promise<void>
+  readNote: (filePath: string) => Promise<string>
+  onNoteChanged: (cb: (events: WatchEventDto[]) => void) => () => void
 }
 
 interface OpenDocumentDto {
@@ -60,6 +72,8 @@ interface EditorApi {
   switchDocument: (docId: string) => Promise<void>
   getOpenDocuments: () => Promise<OpenTabsDto>
   getOpenTabs: () => Promise<string[]>
+  updatePath: (docId: string, newPath: string) => Promise<void>
+  reorderDocuments: (ids: string[]) => Promise<void>
 }
 
 interface BacklinkDto {
@@ -86,8 +100,32 @@ interface SearchResultDto {
   matchCount: number
 }
 
+interface SearchEntryDto {
+  path: string
+  name: string
+  kind: 'file' | 'folder'
+  snippet: string | null
+  matchCount: number
+}
+
 interface SearchApi {
   searchNotes: (query: string) => Promise<SearchResultDto[]>
+  searchEntries: (query: string) => Promise<SearchEntryDto[]>
+}
+
+interface StateApi {
+  getSidebarWidth: () => Promise<number | null>
+  setSidebarWidth: (width: number) => Promise<void>
+  getActiveTabPath: () => Promise<string | null>
+  setActiveTabPath: (path: string | null) => Promise<void>
+  getExpandedFolders: () => Promise<string[]>
+  setExpandedFolders: (folders: string[]) => Promise<void>
+  getCommandBarButtons: () => Promise<string[]>
+  setCommandBarButtons: (buttonIds: string[]) => Promise<void>
+  getActivePanel: () => Promise<string | null>
+  setActivePanel: (panel: string | null) => Promise<void>
+  getModState: (modId: string) => Promise<unknown>
+  setModState: (modId: string, data: unknown) => Promise<void>
 }
 
 interface Window {
@@ -96,5 +134,6 @@ interface Window {
     editor: EditorApi
     knowledge: KnowledgeApi
     search: SearchApi
+    state: StateApi
   }
 }

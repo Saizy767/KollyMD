@@ -1,4 +1,4 @@
-import { DomainError } from '../../../../shared/domain/errors/DomainError'
+import { DomainError } from '@shared/domain/errors/DomainError'
 
 export class NoDocumentOpenError extends DomainError {
   readonly code = 'NO_DOCUMENT_OPEN'

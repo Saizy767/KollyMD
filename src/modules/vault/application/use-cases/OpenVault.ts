@@ -1,6 +1,6 @@
-import type { VaultRepository } from '../../domain/interfaces/VaultRepository'
-import { Vault } from '../../domain/entities/Vault'
-import { InvalidVaultPathError } from '../../domain/errors/VaultErrors'
+import type { VaultRepository } from '@vault/domain/interfaces/VaultRepository'
+import { Vault } from '@vault/domain/entities/Vault'
+import { InvalidVaultPathError } from '@vault/domain/errors/VaultErrors'
 import type { VaultDto } from '../dto'
 
 export class OpenVault {

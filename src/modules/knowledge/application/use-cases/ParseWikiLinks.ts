@@ -1,4 +1,4 @@
-import { WikiLink } from '../../domain/entities/WikiLink'
+import { WikiLink } from '@knowledge/domain/entities/WikiLink'
 
 const WIKI_LINK_RE = /\[\[([^\]]+)\]\]/g
 

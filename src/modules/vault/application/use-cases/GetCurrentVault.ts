@@ -1,4 +1,4 @@
-import type { VaultRepository } from '../../domain/interfaces/VaultRepository'
+import type { VaultRepository } from '@vault/domain/interfaces/VaultRepository'
 import type { VaultDto } from '../dto'
 
 export class GetCurrentVault {

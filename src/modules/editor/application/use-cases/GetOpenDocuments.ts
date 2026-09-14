@@ -1,4 +1,4 @@
-import type { DocumentRepository } from '../../domain/interfaces/DocumentRepository'
+import type { DocumentRepository } from '@editor/domain/interfaces/DocumentRepository'
 import type { OpenTabsDto, TabDto } from '../dto'
 
 export class GetOpenDocuments {
