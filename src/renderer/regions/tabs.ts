@@ -134,14 +134,13 @@ async function openFile(filePath: string): Promise<void> {
   }
   try {
     const result = await window.api.editor.openDocument(filePath)
-    if (result.alreadyOpen) {
-      setActiveDocId(result.docId)
-      const tab = tabs.get(result.docId)
-      if (tab) tab.content = result.content
+    const tab = tabs.get(result.docId)
+    if (tab) {
+      tab.content = result.content
     } else {
       tabs.set(result.docId, { path: result.path, content: result.content, dirty: false })
-      setActiveDocId(result.docId)
     }
+    setActiveDocId(result.docId)
     loadActiveBuffer()
     updateDocStatus()
     renderTabs()

@@ -3,7 +3,6 @@ import type { EditorView } from '@codemirror/view'
 import type { Range } from '@codemirror/state'
 
 const WIKI_RE = /\[\[([^\]]+)\]\]/g
-const TAG_RE = /(?:^|\s)#(\w+)/gm
 
 class WikiLinkWidget extends WidgetType {
   constructor(readonly name: string) {
@@ -18,25 +17,6 @@ class WikiLinkWidget extends WidgetType {
   }
   eq(other: WidgetType): boolean {
     return other instanceof WikiLinkWidget && this.name === other.name
-  }
-  ignoreEvent(): boolean {
-    return true
-  }
-}
-
-class TagWidget extends WidgetType {
-  constructor(readonly name: string) {
-    super()
-  }
-  toDOM(): HTMLElement {
-    const a = document.createElement('a')
-    a.className = 'cm-tag'
-    a.dataset.tag = this.name
-    a.textContent = '#' + this.name
-    return a
-  }
-  eq(other: WidgetType): boolean {
-    return other instanceof TagWidget && this.name === other.name
   }
   ignoreEvent(): boolean {
     return true
@@ -63,16 +43,6 @@ function buildDecorations(view: EditorView): DecorationSet {
         decos.push(
           Decoration.replace({ widget: new WikiLinkWidget(m[1].trim()) }).range(start, end)
         )
-      }
-    }
-
-    TAG_RE.lastIndex = 0
-    while ((m = TAG_RE.exec(text)) !== null) {
-      const hashPos = m.index + m[0].length - m[1].length - 1
-      const start = from + hashPos
-      const end = start + m[1].length + 1
-      if (start > cursorLineEnd || end < cursorLineStart) {
-        decos.push(Decoration.replace({ widget: new TagWidget(m[1]) }).range(start, end))
       }
     }
   }

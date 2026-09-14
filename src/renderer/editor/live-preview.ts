@@ -32,18 +32,23 @@ const STYLE_MAP: Record<string, string> = {
   FencedCode: 'cm-code-block',
   CodeBlock: 'cm-code-block',
   Blockquote: 'cm-blockquote',
-  Link: 'cm-link'
+  Link: 'cm-link',
+  Autolink: 'cm-link'
 }
 
+const HEADING_PREFIX_RE = /^#{1,6}\s/
+
+const TAG_RE = /(?:^|\s)#([a-zA-Zа-яА-Я0-9_-]+)/gm
+
 const HIDE_NAMES = new Set([
-  'HeaderMark',
   'EmphasisMark',
   'CodeMark',
   'LinkMark',
   'QuoteMark',
-  'URL',
   'LinkLabel'
 ])
+
+const URL_HIDDEN_PARENTS = new Set(['Link', 'Image'])
 
 function buildDecorations(view: EditorView): DecorationSet {
   const decos: Range<Decoration>[] = []
@@ -62,6 +67,27 @@ function buildDecorations(view: EditorView): DecorationSet {
     enter(node) {
       if (onCursorLine(node.from, node.to)) return
 
+      if (node.name === 'HeaderMark') {
+        const lineStart = view.state.doc.lineAt(node.from).from
+        if (
+          node.from === lineStart &&
+          view.state.doc.sliceString(node.from, node.from + 1) === '#'
+        ) {
+          return
+        }
+        decos.push(Decoration.replace({}).range(node.from, node.to))
+        return
+      }
+
+      if (node.name === 'URL') {
+        if (URL_HIDDEN_PARENTS.has(node.node.parent?.name ?? '')) {
+          decos.push(Decoration.replace({}).range(node.from, node.to))
+        } else {
+          decos.push(Decoration.mark({ class: 'cm-link' }).range(node.from, node.to))
+        }
+        return
+      }
+
       if (HIDE_NAMES.has(node.name)) {
         decos.push(Decoration.replace({}).range(node.from, node.to))
         return
@@ -78,6 +104,36 @@ function buildDecorations(view: EditorView): DecorationSet {
       }
     }
   })
+
+  for (const { from, to } of view.visibleRanges) {
+    const startLine = view.state.doc.lineAt(from)
+    const endLine = view.state.doc.lineAt(to)
+    for (let lineNum = startLine.number; lineNum <= endLine.number; lineNum++) {
+      const line = view.state.doc.line(lineNum)
+      const m = HEADING_PREFIX_RE.exec(line.text)
+      if (m) {
+        const prefixFrom = line.from
+        const prefixTo = line.from + m[0].length
+        if (prefixFrom > cursorLineEnd || prefixTo < cursorLineStart) {
+          decos.push(Decoration.replace({}).range(prefixFrom, prefixTo))
+        }
+      }
+    }
+  }
+
+  for (const { from, to } of view.visibleRanges) {
+    const text = view.state.doc.sliceString(from, to)
+    TAG_RE.lastIndex = 0
+    let m: RegExpExecArray | null
+    while ((m = TAG_RE.exec(text)) !== null) {
+      const prefixLen = m[0].length - m[1].length - 1
+      const tagFrom = from + m.index + prefixLen
+      const tagTo = tagFrom + m[1].length + 1
+      if (tagFrom > cursorLineEnd || tagTo < cursorLineStart) {
+        decos.push(Decoration.mark({ class: 'tag' }).range(tagFrom, tagTo))
+      }
+    }
+  }
 
   return Decoration.set(decos, true)
 }
