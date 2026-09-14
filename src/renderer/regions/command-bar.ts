@@ -166,6 +166,7 @@ function endCmdDrag(): void {
   suppressNextClick = true
   window.setTimeout(() => { suppressNextClick = false }, 0)
   refreshCmdBarFullState()
+  persistCommandBarButtons()
 }
 
 export function initCommandBar(registry: ModRegistry): void {

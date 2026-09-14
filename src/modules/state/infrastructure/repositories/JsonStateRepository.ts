@@ -22,7 +22,8 @@ export class JsonStateRepository implements StateRepository {
         data.openTabs ?? [],
         data.sidebarWidth ?? null,
         data.activeTabPath ?? null,
-        data.expandedFolders ?? []
+        data.expandedFolders ?? [],
+        data.commandBarButtons ?? []
       )
       state.activePanel = typeof data.activePanel === 'string' ? data.activePanel : null
       return state
@@ -47,6 +48,7 @@ export class JsonStateRepository implements StateRepository {
           sidebarWidth: state.sidebarWidth,
           activeTabPath: state.activeTabPath,
           expandedFolders: state.expandedFolders,
+          commandBarButtons: state.commandBarButtons,
           activePanel: state.activePanel
         },
         null,

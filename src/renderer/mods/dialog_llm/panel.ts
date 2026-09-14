@@ -20,6 +20,23 @@ let statusEl: HTMLSpanElement
 
 const messages: ChatMessage[] = []
 let initialized = false
+let saveStateTimer: ReturnType<typeof setTimeout> | null = null
+
+function saveStateImmediate(): void {
+  window.api.state
+    .setModState(modId, {
+      messages,
+      draft: inputEl.value,
+    })
+    .catch(() => {})
+}
+
+function scheduleSaveState(): void {
+  if (saveStateTimer) clearTimeout(saveStateTimer)
+  saveStateTimer = setTimeout(() => {
+    saveStateImmediate()
+  }, 500)
+}
 
 function renderMessages(): void {
   messagesEl.replaceChildren()
@@ -50,6 +67,7 @@ function sendMessage(): void {
   messages.push({ role: 'user', text })
   inputEl.value = ''
   renderMessages()
+  saveStateImmediate()
 }
 
 function hidePanel(): void {
@@ -109,10 +127,33 @@ function buildPanelDom(): void {
   sendBtn.addEventListener('click', () => {
     sendMessage()
   })
+
+  inputEl.addEventListener('input', () => {
+    scheduleSaveState()
+  })
 }
 
 async function restoreState(): Promise<void> {
-  // Panel visibility is managed by ButtonRegistry.setActive().
+  try {
+    const data = await window.api.state.getModState(modId) as {
+      messages?: { role: 'user'; text: string }[]
+      draft?: string
+    } | null
+    if (data?.messages) {
+      messages.length = 0
+      for (const m of data.messages) {
+        if (m && typeof m.role === 'string' && typeof m.text === 'string') {
+          messages.push({ role: m.role, text: m.text })
+        }
+      }
+    }
+    if (typeof data?.draft === 'string') {
+      inputEl.value = data.draft
+    }
+    render()
+  } catch {
+    render()
+  }
 }
 
 export function initLlmDialog(id: string): LlmDialogHandle {
